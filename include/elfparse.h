@@ -1,3 +1,6 @@
+/**
+ * This file was written with help from https://github.com/TheCodeArtist/elf-parser and the Linux man page.
+ */
 #ifndef ELFPARSE_H
 #define ELFPARSE_H
 #include <elf.h>
