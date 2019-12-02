@@ -54,23 +54,34 @@ int main(int argc, char* argv[]) {
     // visualize relative addressing
     ZyanU64 runtime_address = elf64.s_hdr[14].sh_addr;
     ZyanUSize offset = 0;
-    const ZyanUSize length = elf64.s_hdr[14].sh_size;
+    const ZyanUSize length = 15;
     ZydisDecodedInstruction instruction;
-    while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, data + offset, length - offset,
-                                                 &instruction)))
-    {
-        // Print current instruction pointer.
+    while (offset < elf64.s_hdr[14].sh_size) {
+        ZyanStatus stat =
+        ZydisDecoderDecodeBuffer(&decoder, data + offset, length, &instruction);
         printf("%016" PRIX64 "  ", runtime_address);
-
-        // Format & print the binary instruction structure to human readable format
         char buffer[256];
         ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
                                         runtime_address);
         puts(buffer);
-
         offset += instruction.length;
         runtime_address += instruction.length;
     }
+
+//    while (ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, data + offset, length - offset, &instruction)))
+//    {
+//        // Print current instruction pointer.
+//        printf("%016" PRIX64 "  ", runtime_address);
+//
+//        // Format & print the binary instruction structure to human readable format
+//        char buffer[256];
+//        ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
+//                                        runtime_address);
+//        puts(buffer);
+//
+//        offset += instruction.length;
+//        runtime_address += instruction.length;
+//    }
 
     free_elf_file(&elf64);
     return 0;
