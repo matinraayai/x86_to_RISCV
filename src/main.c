@@ -39,6 +39,18 @@ int main(int argc, char* argv[]) {
     Elf64_Shdr *sec_header_tables = read_all_section_header_tables(elf_file, &elf_header);
     char** all_sections = read_all_elf_sections(elf_file, &elf_header, sec_header_tables);
     print_section_headers(elf_file, &elf_header, sec_header_tables, &all_sections);
+    char* current = malloc(2 * sizeof(char));
+    for (int i = 0; i < sec_header_tables[14].sh_size; i++) {
+        sprintf(current, "%02hhx", all_sections[14][i]);
+        printf("%02hhx", all_sections[14][i]);
+        if ((i + 1) % 4 == 0) {
+            printf(" ");
+        }
+        if ( (i + 1) % 16 == 0) {
+            printf("\n");
+        }
+    }
+    free(sec_header_tables), free(all_sections);
     close(elf_file);
     return 0;
 }
