@@ -7,22 +7,28 @@
 #include <stdbool.h>
 #include <zconf.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
 
-void initialize_elf_header(int fd, Elf64_Ehdr *elf_header);
 
-bool check_magic_elf_bytes(Elf64_Ehdr *elf_header);
+typedef struct elf_t_ {
+    int             fd; // File descriptor associated with the elf.
+    Elf64_Ehdr*     hdr; // Header table.
+    Elf64_Phdr*     p_hdr; // Program header table.
+    Elf64_Shdr*     s_hdr; // Section header table.
+    char**          sect; // All Sections combined.
+} Elf64_t;
 
-unsigned char get_elf_binary_arch(Elf64_Ehdr *elf_header);
+Elf64_t read_elf_file(char* path, FILE* out_str, FILE* err_str);
 
-unsigned char get_elf_data_encoding(Elf64_Ehdr *elf_header);
+void initialize_elf_header(Elf64_t* elf64);
 
-unsigned char get_elf_os_abi_version(Elf64_Ehdr *elf_header);
+void check_elf(Elf64_t* elf64, FILE* out_str, FILE* err_str);
 
-unsigned char get_elf_target_machine(Elf64_Ehdr *elf_header);
+void read_section_header_tables(Elf64_t* elf64);
 
-Elf64_Shdr* read_all_section_header_tables(int fd, Elf64_Ehdr *elf_header);
+Elf64_t init_elf_file(char* path, FILE* out_str, FILE* err_str);
 
-char* read_section(int fd, Elf64_Shdr *section_header);
+void free_elf_file(Elf64_t* elf64);
 
-char** read_all_elf_sections(int fd, Elf64_Ehdr *elf_header, Elf64_Shdr *sec_header_table);
 #endif //ELFPARSE_H

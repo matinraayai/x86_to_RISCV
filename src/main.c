@@ -1,13 +1,13 @@
+#include "../include/elfparse.h"
 #include <stdio.h>
 
-#include "../include/helper.h"
-
-void print_section_headers(int fd, Elf64_Ehdr* eh, Elf64_Shdr* sh_table, char*** all_sec)
+void print_section_headers(Elf64_t* elf64)
 {
     uint32_t i;
-
+    Elf64_Shdr* sh_table = elf64->s_hdr;
+    Elf64_Ehdr* eh = elf64->hdr;
+    char* sh_str = (elf64->sect)[eh->e_shstrndx];
     /* Read section-header string-table */
-    char* sh_str = (*all_sec)[eh->e_shstrndx];
     printf("========================================");
     printf("========================================\n");
     printf(" idx offset     load-addr  size       algn"
@@ -18,7 +18,7 @@ void print_section_headers(int fd, Elf64_Ehdr* eh, Elf64_Shdr* sh_table, char***
         printf(" %03d ", i);
         printf("0x%08x ", sh_table[i].sh_offset);
         printf("0x%08x ", sh_table[i].sh_addr);
-        printf("%d ", sh_table[i].sh_size);
+        printf("0x%08x ", sh_table[i].sh_size);
         printf("%4d ", sh_table[i].sh_addralign);
         printf("0x%08x ", sh_table[i].sh_flags);
         printf("0x%08x ", sh_table[i].sh_type);
@@ -32,17 +32,12 @@ void print_section_headers(int fd, Elf64_Ehdr* eh, Elf64_Shdr* sh_table, char***
 }
 
 int main(int argc, char* argv[]) {
-    int elf_file = read_elf_file(argv[1]);
-    Elf64_Ehdr elf_header;
-    initialize_elf_header(elf_file, &elf_header);
-    check_elf_header(&elf_header);
-    Elf64_Shdr *sec_header_tables = read_all_section_header_tables(elf_file, &elf_header);
-    char** all_sections = read_all_elf_sections(elf_file, &elf_header, sec_header_tables);
-    print_section_headers(elf_file, &elf_header, sec_header_tables, &all_sections);
+    Elf64_t elf64 = init_elf_file(argv[1], stdout, stderr);
+    print_section_headers(&elf64);
     char* current = malloc(2 * sizeof(char));
-    for (int i = 0; i < sec_header_tables[14].sh_size; i++) {
-        sprintf(current, "%02hhx", all_sections[14][i]);
-        printf("%02hhx", all_sections[14][i]);
+    for (unsigned long i = 0; i < elf64.s_hdr[14].sh_size; i++) {
+        sprintf(current, "%02hhx", elf64.sect[14][i]);
+        printf("%02hhx", elf64.sect[14][i]);
         if ((i + 1) % 4 == 0) {
             printf(" ");
         }
@@ -50,7 +45,7 @@ int main(int argc, char* argv[]) {
             printf("\n");
         }
     }
-    free(sec_header_tables), free(all_sections);
-    close(elf_file);
+    free(current);
+    free_elf_file(&elf64);
     return 0;
 }
