@@ -1,6 +1,5 @@
-#include "../include/elfparse.h"
+#include <elfparse.h>
 #include <stdio.h>
-#include "../zydis/include/Zydis/Zydis.h"
 
 void print_section_headers(Elf64_t* elf64)
 {
