@@ -63,7 +63,7 @@ void read_section_header_tables(Elf64_t* elf64) {
 void read_sections(Elf64_t* elf64) {
     Elf64_Ehdr* elf_header = elf64->hdr;
     Elf64_Shdr* sec_header_table = elf64->s_hdr;
-    elf64->sect = malloc(elf_header->e_shnum * sizeof(char*));
+    elf64->sect = malloc(elf_header->e_shnum * sizeof(ZyanU8*));
     for (int i = 0; i < elf_header->e_shnum; i++) {
         elf64->sect[i] = malloc(sec_header_table[i].sh_size);
         lseek(elf64->fd, (off_t) sec_header_table[i].sh_offset, SEEK_SET);

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <Zydis/Status.h>
 
 
 typedef struct elf_t_ {
@@ -16,7 +17,7 @@ typedef struct elf_t_ {
     Elf64_Ehdr*     hdr; // Header table.
     Elf64_Phdr*     p_hdr; // Program header table.
     Elf64_Shdr*     s_hdr; // Section header table.
-    char**          sect; // All Sections combined.
+    ZyanU8**        sect; // All Sections combined.
 } Elf64_t;
 
 Elf64_t read_elf_file(char* path, FILE* out_str, FILE* err_str);
@@ -30,5 +31,7 @@ void read_section_header_tables(Elf64_t* elf64);
 Elf64_t init_elf_file(char* path, FILE* out_str, FILE* err_str);
 
 void free_elf_file(Elf64_t* elf64);
+
+void read_sections(Elf64_t* elf64);
 
 #endif //ELFPARSE_H
