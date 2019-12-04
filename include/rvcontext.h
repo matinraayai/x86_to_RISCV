@@ -29,6 +29,7 @@ typedef struct {
         ZyanU16 gs; //Extra segment register.
     } seg_s9;
     ZyanU64 r_flags_s10;
+    //More GPR registers.
     ZyanU64 r8_s11;
     ZyanU64 r9_a0; //No need for function call registers, x86 can handle calling conventions itself.
     ZyanU64 r10_a1;

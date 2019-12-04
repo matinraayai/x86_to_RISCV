@@ -1,5 +1,86 @@
 #include <rvcontext.h>
 
+void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeMOV(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executePOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeAND(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executePUSH(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeLEA(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeSUB(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeSAR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeCALL(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeTEST(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeJZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeHLT(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeNOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeJMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeSHR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeJNZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+void executeLEAVE(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    printf("Found an instruction!");
+}
+
+
 void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem) {
     Elf64_Ehdr* elf_header = elf64->hdr;
     Elf64_Shdr* s_hdr_table = elf64->s_hdr;
@@ -58,6 +139,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_ADCX:
             break;
         case ZYDIS_MNEMONIC_ADD:
+            executeADD(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_ADDPD:
             break;
@@ -86,6 +168,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_AESKEYGENASSIST:
             break;
         case ZYDIS_MNEMONIC_AND:
+            executeAND(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_ANDN:
             break;
@@ -162,6 +245,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_BZHI:
             break;
         case ZYDIS_MNEMONIC_CALL:
+            executeCALL(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_CBW:
             break;
@@ -232,6 +316,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_CMOVZ:
             break;
         case ZYDIS_MNEMONIC_CMP:
+            executeCMP(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_CMPPD:
             break;
@@ -562,6 +647,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_HADDPS:
             break;
         case ZYDIS_MNEMONIC_HLT:
+            executeHLT(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_HSUBPD:
             break;
@@ -632,6 +718,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_JLE:
             break;
         case ZYDIS_MNEMONIC_JMP:
+            executeJMP(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_JNB:
             break;
@@ -648,6 +735,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_JNS:
             break;
         case ZYDIS_MNEMONIC_JNZ:
+            executeJNZ(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_JO:
             break;
@@ -658,6 +746,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_JS:
             break;
         case ZYDIS_MNEMONIC_JZ:
+            executeJZ(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_KADDB:
             break;
@@ -800,8 +889,10 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_LDS:
             break;
         case ZYDIS_MNEMONIC_LEA:
+            executeLEA(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_LEAVE:
+            executeLEAVE(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_LES:
             break;
@@ -876,6 +967,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_MONTMUL:
             break;
         case ZYDIS_MNEMONIC_MOV:
+            executeMOV(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_MOVAPD:
             break;
@@ -978,6 +1070,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_NEG:
             break;
         case ZYDIS_MNEMONIC_NOP:
+            executeNOP(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_NOT:
             break;
@@ -1218,6 +1311,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_PMULUDQ:
             break;
         case ZYDIS_MNEMONIC_POP:
+            executePOP(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_POPA:
             break;
@@ -1324,6 +1418,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_PUNPCKLWD:
             break;
         case ZYDIS_MNEMONIC_PUSH:
+            executePUSH(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_PUSHA:
             break;
@@ -1372,6 +1467,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_RDTSCP:
             break;
         case ZYDIS_MNEMONIC_RET:
+            executeRET(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_ROL:
             break;
@@ -1400,6 +1496,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_SALC:
             break;
         case ZYDIS_MNEMONIC_SAR:
+            executeSAR(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_SARX:
             break;
@@ -1474,6 +1571,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_SHLX:
             break;
         case ZYDIS_MNEMONIC_SHR:
+            executeSHR(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_SHRD:
             break;
@@ -1526,6 +1624,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_STR:
             break;
         case ZYDIS_MNEMONIC_SUB:
+            executeSUB(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_SUBPD:
             break;
@@ -1548,6 +1647,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_T1MSKC:
             break;
         case ZYDIS_MNEMONIC_TEST:
+            executeTEST(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_TPAUSE:
             break;
@@ -3216,6 +3316,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_XLAT:
             break;
         case ZYDIS_MNEMONIC_XOR:
+            executeXOR(rv_context, instruction, err_str);
             break;
         case ZYDIS_MNEMONIC_XORPD:
             break;
