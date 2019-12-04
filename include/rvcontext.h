@@ -38,6 +38,8 @@ typedef struct {
     ZyanU64 r13_a4;
     ZyanU64 r14_a5;
     ZyanU64 r15_a6;
+    //Temporary registers used for micro op implementation.
+    ZyanU64 t[7];
 } RVContext;
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);

@@ -1,58 +1,587 @@
 #include <rvcontext.h>
 
+ZyanU64* getRegOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand) {
+    switch (operand.reg.value) {
+        case ZYDIS_REGISTER_NONE:
+            break;
+        case ZYDIS_REGISTER_AL:
+        case ZYDIS_REGISTER_AX:
+        case ZYDIS_REGISTER_AH:
+        case ZYDIS_REGISTER_EAX:
+        case ZYDIS_REGISTER_RAX:
+            return &(rv_context->rax_s1);
+        case ZYDIS_REGISTER_BL:
+        case ZYDIS_REGISTER_BX:
+        case ZYDIS_REGISTER_BH:
+        case ZYDIS_REGISTER_EBX:
+        case ZYDIS_REGISTER_RBX:
+            return &(rv_context->rbx_s2);
+        case ZYDIS_REGISTER_CL:
+        case ZYDIS_REGISTER_CX:
+        case ZYDIS_REGISTER_CH:
+        case ZYDIS_REGISTER_ECX:
+        case ZYDIS_REGISTER_RCX:
+            return &(rv_context->rcx_s3);
+        case ZYDIS_REGISTER_DL:
+        case ZYDIS_REGISTER_DX:
+        case ZYDIS_REGISTER_DH:
+        case ZYDIS_REGISTER_EDX:
+        case ZYDIS_REGISTER_RDX:
+            return &(rv_context->rdx_s4);
+        case ZYDIS_REGISTER_BPL:
+        case ZYDIS_REGISTER_BP:
+        case ZYDIS_REGISTER_EBP:
+        case ZYDIS_REGISTER_RBP:
+            return &(rv_context->rbp_fp);
+        case ZYDIS_REGISTER_SPL:
+        case ZYDIS_REGISTER_SP:
+        case ZYDIS_REGISTER_ESP:
+        case ZYDIS_REGISTER_RSP:
+            return &(rv_context->rsp_sp);
+        case ZYDIS_REGISTER_DIL:
+        case ZYDIS_REGISTER_DI:
+        case ZYDIS_REGISTER_EDI:
+        case ZYDIS_REGISTER_RDI:
+            return &(rv_context->rdi_s5);
+        case ZYDIS_REGISTER_SIL:
+        case ZYDIS_REGISTER_SI:
+        case ZYDIS_REGISTER_ESI:
+        case ZYDIS_REGISTER_RSI:
+            return &(rv_context->rsi_s6);
+        case ZYDIS_REGISTER_IP:
+        case ZYDIS_REGISTER_EIP:
+        case ZYDIS_REGISTER_RIP:
+            return &(rv_context->rip_s7);
+        case ZYDIS_REGISTER_DS:
+            return (ZyanU64 *) &(rv_context->seg_s8.ds);
+        case ZYDIS_REGISTER_CS:
+            return (ZyanU64 *) &(rv_context->seg_s8.cs);
+        case ZYDIS_REGISTER_ES:
+            return (ZyanU64 *) &(rv_context->seg_s9.es);
+        case ZYDIS_REGISTER_SS:
+            return (ZyanU64 *) &(rv_context->seg_s9.ss);
+        case ZYDIS_REGISTER_FS:
+            return (ZyanU64 *) &(rv_context->seg_s9.fs);
+        case ZYDIS_REGISTER_GS:
+            return (ZyanU64 *) &(rv_context->seg_s9.gs);
+        case ZYDIS_REGISTER_R8B:
+        case ZYDIS_REGISTER_R8W:
+        case ZYDIS_REGISTER_R8D:
+        case ZYDIS_REGISTER_R8:
+            return &(rv_context->r8_s11);
+        case ZYDIS_REGISTER_R9B:
+        case ZYDIS_REGISTER_R9W:
+        case ZYDIS_REGISTER_R9D:
+        case ZYDIS_REGISTER_R9:
+            return &(rv_context->r9_a0);
+        case ZYDIS_REGISTER_R10B:
+        case ZYDIS_REGISTER_R10W:
+        case ZYDIS_REGISTER_R10D:
+        case ZYDIS_REGISTER_R10:
+            return &(rv_context->r10_a1);
+        case ZYDIS_REGISTER_R11B:
+        case ZYDIS_REGISTER_R11W:
+        case ZYDIS_REGISTER_R11D:
+        case ZYDIS_REGISTER_R11:
+            return &(rv_context->r11_a2);
+        case ZYDIS_REGISTER_R12B:
+        case ZYDIS_REGISTER_R12W:
+        case ZYDIS_REGISTER_R12D:
+        case ZYDIS_REGISTER_R12:
+            return &(rv_context->r12_a3);
+        case ZYDIS_REGISTER_R13B:
+        case ZYDIS_REGISTER_R13W:
+        case ZYDIS_REGISTER_R13D:
+        case ZYDIS_REGISTER_R13:
+            return &(rv_context->r13_a4);
+        case ZYDIS_REGISTER_R14B:
+        case ZYDIS_REGISTER_R14W:
+        case ZYDIS_REGISTER_R14D:
+        case ZYDIS_REGISTER_R14:
+            return &(rv_context->r14_a5);
+        case ZYDIS_REGISTER_R15B:
+        case ZYDIS_REGISTER_R15W:
+        case ZYDIS_REGISTER_R15D:
+        case ZYDIS_REGISTER_R15:
+            return &(rv_context->r15_a6);
+        case ZYDIS_REGISTER_ST0:
+            break;
+        case ZYDIS_REGISTER_ST1:
+            break;
+        case ZYDIS_REGISTER_ST2:
+            break;
+        case ZYDIS_REGISTER_ST3:
+            break;
+        case ZYDIS_REGISTER_ST4:
+            break;
+        case ZYDIS_REGISTER_ST5:
+            break;
+        case ZYDIS_REGISTER_ST6:
+            break;
+        case ZYDIS_REGISTER_ST7:
+            break;
+        case ZYDIS_REGISTER_X87CONTROL:
+            break;
+        case ZYDIS_REGISTER_X87STATUS:
+            break;
+        case ZYDIS_REGISTER_X87TAG:
+            break;
+        case ZYDIS_REGISTER_MM0:
+            break;
+        case ZYDIS_REGISTER_MM1:
+            break;
+        case ZYDIS_REGISTER_MM2:
+            break;
+        case ZYDIS_REGISTER_MM3:
+            break;
+        case ZYDIS_REGISTER_MM4:
+            break;
+        case ZYDIS_REGISTER_MM5:
+            break;
+        case ZYDIS_REGISTER_MM6:
+            break;
+        case ZYDIS_REGISTER_MM7:
+            break;
+        case ZYDIS_REGISTER_XMM0:
+            break;
+        case ZYDIS_REGISTER_XMM1:
+            break;
+        case ZYDIS_REGISTER_XMM2:
+            break;
+        case ZYDIS_REGISTER_XMM3:
+            break;
+        case ZYDIS_REGISTER_XMM4:
+            break;
+        case ZYDIS_REGISTER_XMM5:
+            break;
+        case ZYDIS_REGISTER_XMM6:
+            break;
+        case ZYDIS_REGISTER_XMM7:
+            break;
+        case ZYDIS_REGISTER_XMM8:
+            break;
+        case ZYDIS_REGISTER_XMM9:
+            break;
+        case ZYDIS_REGISTER_XMM10:
+            break;
+        case ZYDIS_REGISTER_XMM11:
+            break;
+        case ZYDIS_REGISTER_XMM12:
+            break;
+        case ZYDIS_REGISTER_XMM13:
+            break;
+        case ZYDIS_REGISTER_XMM14:
+            break;
+        case ZYDIS_REGISTER_XMM15:
+            break;
+        case ZYDIS_REGISTER_XMM16:
+            break;
+        case ZYDIS_REGISTER_XMM17:
+            break;
+        case ZYDIS_REGISTER_XMM18:
+            break;
+        case ZYDIS_REGISTER_XMM19:
+            break;
+        case ZYDIS_REGISTER_XMM20:
+            break;
+        case ZYDIS_REGISTER_XMM21:
+            break;
+        case ZYDIS_REGISTER_XMM22:
+            break;
+        case ZYDIS_REGISTER_XMM23:
+            break;
+        case ZYDIS_REGISTER_XMM24:
+            break;
+        case ZYDIS_REGISTER_XMM25:
+            break;
+        case ZYDIS_REGISTER_XMM26:
+            break;
+        case ZYDIS_REGISTER_XMM27:
+            break;
+        case ZYDIS_REGISTER_XMM28:
+            break;
+        case ZYDIS_REGISTER_XMM29:
+            break;
+        case ZYDIS_REGISTER_XMM30:
+            break;
+        case ZYDIS_REGISTER_XMM31:
+            break;
+        case ZYDIS_REGISTER_YMM0:
+            break;
+        case ZYDIS_REGISTER_YMM1:
+            break;
+        case ZYDIS_REGISTER_YMM2:
+            break;
+        case ZYDIS_REGISTER_YMM3:
+            break;
+        case ZYDIS_REGISTER_YMM4:
+            break;
+        case ZYDIS_REGISTER_YMM5:
+            break;
+        case ZYDIS_REGISTER_YMM6:
+            break;
+        case ZYDIS_REGISTER_YMM7:
+            break;
+        case ZYDIS_REGISTER_YMM8:
+            break;
+        case ZYDIS_REGISTER_YMM9:
+            break;
+        case ZYDIS_REGISTER_YMM10:
+            break;
+        case ZYDIS_REGISTER_YMM11:
+            break;
+        case ZYDIS_REGISTER_YMM12:
+            break;
+        case ZYDIS_REGISTER_YMM13:
+            break;
+        case ZYDIS_REGISTER_YMM14:
+            break;
+        case ZYDIS_REGISTER_YMM15:
+            break;
+        case ZYDIS_REGISTER_YMM16:
+            break;
+        case ZYDIS_REGISTER_YMM17:
+            break;
+        case ZYDIS_REGISTER_YMM18:
+            break;
+        case ZYDIS_REGISTER_YMM19:
+            break;
+        case ZYDIS_REGISTER_YMM20:
+            break;
+        case ZYDIS_REGISTER_YMM21:
+            break;
+        case ZYDIS_REGISTER_YMM22:
+            break;
+        case ZYDIS_REGISTER_YMM23:
+            break;
+        case ZYDIS_REGISTER_YMM24:
+            break;
+        case ZYDIS_REGISTER_YMM25:
+            break;
+        case ZYDIS_REGISTER_YMM26:
+            break;
+        case ZYDIS_REGISTER_YMM27:
+            break;
+        case ZYDIS_REGISTER_YMM28:
+            break;
+        case ZYDIS_REGISTER_YMM29:
+            break;
+        case ZYDIS_REGISTER_YMM30:
+            break;
+        case ZYDIS_REGISTER_YMM31:
+            break;
+        case ZYDIS_REGISTER_ZMM0:
+            break;
+        case ZYDIS_REGISTER_ZMM1:
+            break;
+        case ZYDIS_REGISTER_ZMM2:
+            break;
+        case ZYDIS_REGISTER_ZMM3:
+            break;
+        case ZYDIS_REGISTER_ZMM4:
+            break;
+        case ZYDIS_REGISTER_ZMM5:
+            break;
+        case ZYDIS_REGISTER_ZMM6:
+            break;
+        case ZYDIS_REGISTER_ZMM7:
+            break;
+        case ZYDIS_REGISTER_ZMM8:
+            break;
+        case ZYDIS_REGISTER_ZMM9:
+            break;
+        case ZYDIS_REGISTER_ZMM10:
+            break;
+        case ZYDIS_REGISTER_ZMM11:
+            break;
+        case ZYDIS_REGISTER_ZMM12:
+            break;
+        case ZYDIS_REGISTER_ZMM13:
+            break;
+        case ZYDIS_REGISTER_ZMM14:
+            break;
+        case ZYDIS_REGISTER_ZMM15:
+            break;
+        case ZYDIS_REGISTER_ZMM16:
+            break;
+        case ZYDIS_REGISTER_ZMM17:
+            break;
+        case ZYDIS_REGISTER_ZMM18:
+            break;
+        case ZYDIS_REGISTER_ZMM19:
+            break;
+        case ZYDIS_REGISTER_ZMM20:
+            break;
+        case ZYDIS_REGISTER_ZMM21:
+            break;
+        case ZYDIS_REGISTER_ZMM22:
+            break;
+        case ZYDIS_REGISTER_ZMM23:
+            break;
+        case ZYDIS_REGISTER_ZMM24:
+            break;
+        case ZYDIS_REGISTER_ZMM25:
+            break;
+        case ZYDIS_REGISTER_ZMM26:
+            break;
+        case ZYDIS_REGISTER_ZMM27:
+            break;
+        case ZYDIS_REGISTER_ZMM28:
+            break;
+        case ZYDIS_REGISTER_ZMM29:
+            break;
+        case ZYDIS_REGISTER_ZMM30:
+            break;
+        case ZYDIS_REGISTER_ZMM31:
+            break;
+        case ZYDIS_REGISTER_FLAGS:
+            break;
+        case ZYDIS_REGISTER_EFLAGS:
+            break;
+        case ZYDIS_REGISTER_RFLAGS:
+            break;
+
+        case ZYDIS_REGISTER_GDTR:
+            break;
+        case ZYDIS_REGISTER_LDTR:
+            break;
+        case ZYDIS_REGISTER_IDTR:
+            break;
+        case ZYDIS_REGISTER_TR:
+            break;
+        case ZYDIS_REGISTER_TR0:
+            break;
+        case ZYDIS_REGISTER_TR1:
+            break;
+        case ZYDIS_REGISTER_TR2:
+            break;
+        case ZYDIS_REGISTER_TR3:
+            break;
+        case ZYDIS_REGISTER_TR4:
+            break;
+        case ZYDIS_REGISTER_TR5:
+            break;
+        case ZYDIS_REGISTER_TR6:
+            break;
+        case ZYDIS_REGISTER_TR7:
+            break;
+        case ZYDIS_REGISTER_CR0:
+            break;
+        case ZYDIS_REGISTER_CR1:
+            break;
+        case ZYDIS_REGISTER_CR2:
+            break;
+        case ZYDIS_REGISTER_CR3:
+            break;
+        case ZYDIS_REGISTER_CR4:
+            break;
+        case ZYDIS_REGISTER_CR5:
+            break;
+        case ZYDIS_REGISTER_CR6:
+            break;
+        case ZYDIS_REGISTER_CR7:
+            break;
+        case ZYDIS_REGISTER_CR8:
+            break;
+        case ZYDIS_REGISTER_CR9:
+            break;
+        case ZYDIS_REGISTER_CR10:
+            break;
+        case ZYDIS_REGISTER_CR11:
+            break;
+        case ZYDIS_REGISTER_CR12:
+            break;
+        case ZYDIS_REGISTER_CR13:
+            break;
+        case ZYDIS_REGISTER_CR14:
+            break;
+        case ZYDIS_REGISTER_CR15:
+            break;
+        case ZYDIS_REGISTER_DR0:
+            break;
+        case ZYDIS_REGISTER_DR1:
+            break;
+        case ZYDIS_REGISTER_DR2:
+            break;
+        case ZYDIS_REGISTER_DR3:
+            break;
+        case ZYDIS_REGISTER_DR4:
+            break;
+        case ZYDIS_REGISTER_DR5:
+            break;
+        case ZYDIS_REGISTER_DR6:
+            break;
+        case ZYDIS_REGISTER_DR7:
+            break;
+        case ZYDIS_REGISTER_DR8:
+            break;
+        case ZYDIS_REGISTER_DR9:
+            break;
+        case ZYDIS_REGISTER_DR10:
+            break;
+        case ZYDIS_REGISTER_DR11:
+            break;
+        case ZYDIS_REGISTER_DR12:
+            break;
+        case ZYDIS_REGISTER_DR13:
+            break;
+        case ZYDIS_REGISTER_DR14:
+            break;
+        case ZYDIS_REGISTER_DR15:
+            break;
+        case ZYDIS_REGISTER_K0:
+            break;
+        case ZYDIS_REGISTER_K1:
+            break;
+        case ZYDIS_REGISTER_K2:
+            break;
+        case ZYDIS_REGISTER_K3:
+            break;
+        case ZYDIS_REGISTER_K4:
+            break;
+        case ZYDIS_REGISTER_K5:
+            break;
+        case ZYDIS_REGISTER_K6:
+            break;
+        case ZYDIS_REGISTER_K7:
+            break;
+        case ZYDIS_REGISTER_BND0:
+            break;
+        case ZYDIS_REGISTER_BND1:
+            break;
+        case ZYDIS_REGISTER_BND2:
+            break;
+        case ZYDIS_REGISTER_BND3:
+            break;
+        case ZYDIS_REGISTER_BNDCFG:
+            break;
+        case ZYDIS_REGISTER_BNDSTATUS:
+            break;
+        case ZYDIS_REGISTER_MXCSR:
+            break;
+        case ZYDIS_REGISTER_PKRU:
+            break;
+        case ZYDIS_REGISTER_XCR0:
+            break;
+    }
+}
+
+
+ZyanU64* getOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
+    switch(operand.type) {
+        case ZYDIS_ELEMENT_TYPE_INVALID:
+            fprintf(err_str, "Invalid operand!");
+            exit(-1);
+        case ZYDIS_OPERAND_TYPE_REGISTER:
+            return getRegOperandInContext(rv_context, operand);
+        case ZYDIS_OPERAND_TYPE_MEMORY:
+            fprintf(err_str, "Not implemented!");
+            break;
+        case ZYDIS_OPERAND_TYPE_POINTER:
+            fprintf(err_str, "Not implemented!");
+            break;
+        case ZYDIS_OPERAND_TYPE_IMMEDIATE:
+            fprintf(err_str, "Not implemented!");
+            break;
+    }
+}
+
+void setOperandInContext(RVContext* rvContext, ZydisDecodedOperand operand, ZyanU64 val, FILE* err_str) {
+    switch(operand.type) {
+        case ZYDIS_ELEMENT_TYPE_INVALID:
+            fprintf(err_str, "Invalid operand!");
+            break;
+
+        case ZYDIS_OPERAND_TYPE_REGISTER:
+            *(getRegOperandInContext(rvContext, operand)) = val;
+            break;
+        case ZYDIS_OPERAND_TYPE_MEMORY:
+            fprintf(err_str, "Not implemented!");
+            break;
+        case ZYDIS_OPERAND_TYPE_POINTER:
+            fprintf(err_str, "Not implemented!");
+            break;
+        case ZYDIS_OPERAND_TYPE_IMMEDIATE:
+            fprintf(err_str, "Not implemented!");
+            break;
+    }
+}
+
 void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_src = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) << (rv_context->t[2]);
+    rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
+    rv_context->t[4] = *op_src ^ *op_dst;
+    rv_context->t[4] = rv_context->t[4] << (rv_context->t[2]);
+    rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
+    rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
+    setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
+    printf("set");
 }
 
 void executeMOV(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_2 = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
 }
 
 void executePOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
 }
 
 void executeAND(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executePUSH(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeLEA(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeSUB(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeSAR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeCALL(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeTEST(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeJZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
@@ -61,10 +590,12 @@ void executeHLT(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 }
 
 void executeNOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
 void executeJMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     printf("Found an instruction!");
 }
 
