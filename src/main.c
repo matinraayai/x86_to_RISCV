@@ -8,10 +8,10 @@
 
 int main(int argc, char* argv[]) {
     Elf64_t x86elf = elfInit(argv[1], stdout, stderr);
-    printSectionHeaders(&x86elf);
-    printProgramHeaders(&x86elf);
     RVContext rv_context;
     rvContextInit(&rv_context, &x86elf, stderr);
+    printSectionHeaders(&x86elf, &rv_context);
+    printProgramHeaders(&x86elf);
 
     // Initialize decoder context
     ZydisDecoder decoder;

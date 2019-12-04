@@ -4,6 +4,8 @@
 #include <Zydis/DecoderTypes.h>
 
 typedef struct context_ {
+    //TODO: Move the memory segment here instead of the elf file.
+    ZyanU8* mem; // All Sections combined.
     //General Purpose Registers:
     ZyanU64 rax_s1;
     ZyanU64 rbx_s2;
@@ -40,7 +42,13 @@ typedef struct context_ {
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
 
+void rvContextInitMemory(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem);
+
 void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str);
 
 bool rvContextEndOfExecution(RVContext* rv_context);
+
+void printSectionHeaders(Elf64_t* elf64, RVContext* rv_context);
+
+void printProgramHeaders(Elf64_t* elf64);
 #endif //X86_TO_RISCV_RVCONTEXT_H

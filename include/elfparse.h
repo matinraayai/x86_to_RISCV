@@ -17,7 +17,6 @@ typedef struct elf_t_ {
     Elf64_Ehdr*     hdr; // Header table.
     Elf64_Phdr*     p_hdr; // Program header table.
     Elf64_Shdr*     s_hdr; // Section header table.
-    ZyanU8*         sect; // All Sections combined.
 } Elf64_t;
 
 Elf64_t initElfFile(char* path, FILE* out_str, FILE* err_str);
@@ -34,10 +33,6 @@ Elf64_t elfInit(char* path, FILE* out_str, FILE* err_str);
 
 void elfDestroy(Elf64_t* elf64);
 
-void initElfSections(Elf64_t* elf64);
 
-void printSectionHeaders(Elf64_t* elf64);
-
-void printProgramHeaders(Elf64_t* elf64);
 
 #endif //ELFPARSE_H
