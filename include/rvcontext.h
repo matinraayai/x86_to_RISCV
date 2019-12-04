@@ -36,6 +36,6 @@ typedef struct context_ {
     ZyanUSize inst_ptr; //A pointer to the current instruction in the mother process.
 } RVContext;
 
-void rvContextInit(RVContext* rvContext, Elf64_t* elf64, FILE* err_str);
+void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
 
 #endif //X86_TO_RISCV_ENCODER_H
