@@ -1,6 +1,7 @@
-#ifndef X86_TO_RISCV_ENCODER_H
-#define X86_TO_RISCV_ENCODER_H
+#ifndef X86_TO_RISCV_RVCONTEXT_H
+#define X86_TO_RISCV_RVCONTEXT_H
 #include <elfparse.h>
+#include <Zydis/DecoderTypes.h>
 
 typedef struct context_ {
     //General Purpose Registers:
@@ -11,6 +12,7 @@ typedef struct context_ {
     //Index and Pointer Registers:
     ZyanU64 rbp_fp; //Frame pointer, base pointer for stack.
     ZyanU64 rsp_sp; //Stack pointer in both x86 and RISC-V.
+    ZyanU64 gp; //Global pointer for RISC-V. Great for detecting end of execution.
     ZyanU64 rdi_s5;
     ZyanU64 rsi_s6;
     ZyanU64 rip_s7; //Instruction Pointer, have no choice but to map it to a GPR in RISC-V.
@@ -33,9 +35,12 @@ typedef struct context_ {
     ZyanU64 r13_a4;
     ZyanU64 r14_a5;
     ZyanU64 r15_a6;
-    ZyanUSize inst_ptr; //A pointer to the current instruction in the mother process.
+    ZyanU8* inst_ptr; //A pointer to the current instruction in the mother process.
 } RVContext;
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
 
-#endif //X86_TO_RISCV_ENCODER_H
+void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str);
+
+bool rvContextEndOfExecution(RVContext* rv_context);
+#endif //X86_TO_RISCV_RVCONTEXT_H
