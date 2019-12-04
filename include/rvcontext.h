@@ -3,9 +3,9 @@
 #include <elfparse.h>
 #include <Zydis/DecoderTypes.h>
 
-typedef struct context_ {
-    //TODO: Move the memory segment here instead of the elf file.
-    ZyanU8* mem; // All Sections combined.
+typedef struct {
+    // All Elf file sections that are supposed to be in the memory reside here.
+    ZyanU8* mem;
     //General Purpose Registers:
     ZyanU64 rax_s1;
     ZyanU64 rbx_s2;
@@ -14,7 +14,7 @@ typedef struct context_ {
     //Index and Pointer Registers:
     ZyanU64 rbp_fp; //Frame pointer, base pointer for stack.
     ZyanU64 rsp_sp; //Stack pointer in both x86 and RISC-V.
-    ZyanU64 gp; //Global pointer for RISC-V. Great for detecting end of execution.
+    ZyanU64 gp; //Global pointer for RISC-V. Great for detecting end of execution at the end of .fini section.
     ZyanU64 rdi_s5;
     ZyanU64 rsi_s6;
     ZyanU64 rip_s7; //Instruction Pointer, have no choice but to map it to a GPR in RISC-V.
@@ -37,16 +37,13 @@ typedef struct context_ {
     ZyanU64 r13_a4;
     ZyanU64 r14_a5;
     ZyanU64 r15_a6;
-    ZyanU8* inst_ptr; //A pointer to the current instruction in the mother process. Might be removed as it's not really
-    //needed.
 } RVContext;
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
-
-void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem);
 
 void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str);
 
 bool rvContextEndOfExecution(RVContext* rv_context);
 
+void rvContextDestroy(RVContext* rv_context);
 #endif //X86_TO_RISCV_RVCONTEXT_H

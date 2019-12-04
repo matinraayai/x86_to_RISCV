@@ -1,28 +1,19 @@
 #include <rvcontext.h>
 
-
-void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str) {
-    //Find the address of the text segment and put it into the pc.
-    rv_context->rip_s7 = elf64->hdr->e_entry;
-    //Initialize memory and memory related registers.
-    rvContextInitMemoryVars(rv_context, elf64, 1024);
-}
-
 void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem) {
     Elf64_Ehdr* elf_header = elf64->hdr;
     Elf64_Shdr* s_hdr_table = elf64->s_hdr;
     ZyanUSize mem_size = 0;
-    //TODO: If a better way to extract the mem size is found, replace this.
+    //Find the Size of the address space specified by the elf file.
     for (int i = elf_header->e_shnum - 1; i > -1; i--) {
         if (s_hdr_table[i].sh_addr > 0) {
             mem_size = s_hdr_table[i].sh_addr + s_hdr_table[i].sh_size;
             break;
         }
     }
+    //Allocate the memory and read in the memory image from the elf file.
     rv_context->mem = malloc(mem_size + stack_mem);
     rv_context->rbp_fp = rv_context->rsp_sp = (ZyanU64) mem_size;
-    ////
-    //Read in the memory image.
     for (int i = 0; i < elf_header->e_shnum; i++) {
         if (s_hdr_table[i].sh_flags != 0 && s_hdr_table[i].sh_flags != 0x30) {
             lseek(elf64->fd, (off_t) s_hdr_table[i].sh_offset, SEEK_SET);
@@ -39,6 +30,15 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
     }
 
 }
+
+
+void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str) {
+    //Find the address of the text segment and put it into the pc.
+    rv_context->rip_s7 = elf64->hdr->e_entry;
+    //Initialize memory and memory related registers.
+    rvContextInitMemoryVars(rv_context, elf64, 1024);
+}
+
 
 void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str) {
     //A giant case switch statement to call the function associated with each instruction.
@@ -3266,5 +3266,9 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
 
 bool rvContextEndOfExecution(RVContext* rv_context) {
     return rv_context->gp == rv_context->rip_s7;
+}
+
+void rvContextDestroy(RVContext* rv_context) {
+    free(rv_context->mem);
 }
 

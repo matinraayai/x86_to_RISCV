@@ -12,7 +12,7 @@
 #include <Zydis/Status.h>
 #include <string.h>
 
-typedef struct elf_t_ {
+typedef struct {
     int             fd; // File descriptor associated with the elf.
     Elf64_Ehdr*     hdr; // Header table.
     Elf64_Phdr*     p_hdr; // Program header table.
