@@ -104,6 +104,10 @@ ZyanU64* getRegOperandInContext(RVContext* rv_context, ZydisDecodedOperand opera
         case ZYDIS_REGISTER_R15D:
         case ZYDIS_REGISTER_R15:
             return &(rv_context->r15_a6);
+        case ZYDIS_REGISTER_FLAGS:
+        case ZYDIS_REGISTER_EFLAGS:
+        case ZYDIS_REGISTER_RFLAGS:
+            return (ZyanU64*) &(rv_context->r_flags_s10);
         case ZYDIS_REGISTER_ST0:
             break;
         case ZYDIS_REGISTER_ST1:
@@ -334,13 +338,6 @@ ZyanU64* getRegOperandInContext(RVContext* rv_context, ZydisDecodedOperand opera
             break;
         case ZYDIS_REGISTER_ZMM31:
             break;
-        case ZYDIS_REGISTER_FLAGS:
-            break;
-        case ZYDIS_REGISTER_EFLAGS:
-            break;
-        case ZYDIS_REGISTER_RFLAGS:
-            break;
-
         case ZYDIS_REGISTER_GDTR:
             break;
         case ZYDIS_REGISTER_LDTR:
@@ -511,19 +508,30 @@ void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
     ZyanU64* op_src = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
     rv_context->t[2] = 64 - instruction->operand_width;
-    rv_context->t[3] = (*op_dst) << (rv_context->t[2]);
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
     rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
     rv_context->t[4] = *op_src ^ *op_dst;
     rv_context->t[4] = rv_context->t[4] << (rv_context->t[2]);
     rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
     rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
     setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
-    printf("set");
+    //Flags
+    rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
+    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
+    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
+    //TODO: Add Parity.
 }
 
 void executeMOV(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    ZyanU64* op_2 = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_src = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
+    rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
+    rv_context->t[4] = (*op_src) << (rv_context->t[2]);
+    rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
+    rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
+    setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
 }
 
 void executePOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {

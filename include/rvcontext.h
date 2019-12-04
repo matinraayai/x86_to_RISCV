@@ -2,6 +2,26 @@
 #define X86_TO_RISCV_RVCONTEXT_H
 #include <elfparse.h>
 #include <Zydis/DecoderTypes.h>
+typedef struct {
+    ZyanBool cf;
+    ZyanBool pf;
+    ZyanBool af;
+    ZyanBool zf;
+    ZyanBool sf;
+    ZyanBool tf;
+    ZyanBool if_;
+    ZyanBool df;
+    ZyanBool of;
+    ZyanBool iopl;
+    ZyanBool nt;
+    ZyanBool rf;
+    ZyanBool vm;
+    ZyanBool ac;
+    ZyanBool vif;
+    ZyanBool vip;
+    ZyanBool id;
+} Flag;
+
 
 typedef struct {
     // All Elf file sections that are supposed to be in the memory reside here.
@@ -28,7 +48,7 @@ typedef struct {
         ZyanU16 fs; //Extra segment register.
         ZyanU16 gs; //Extra segment register.
     } seg_s9;
-    ZyanU64 r_flags_s10;
+    Flag r_flags_s10;
     //More GPR registers.
     ZyanU64 r8_s11;
     ZyanU64 r9_a0; //No need for function call registers, x86 can handle calling conventions itself.
