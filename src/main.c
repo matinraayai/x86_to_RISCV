@@ -23,9 +23,8 @@ int main(int argc, char* argv[]) {
 
     const ZyanUSize window = 15;
     ZydisDecodedInstruction instruction;
-
-    while (rvContextEndOfExecution(&rv_context)) {
-        if (!ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, rv_context.inst_ptr, window, &instruction))) {
+    while (!rvContextEndOfExecution(&rv_context)) {
+        if (!ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, rv_context.rip_s7 + rv_context.mem, window, &instruction))) {
             fprintf(stderr, "Failed to decode the instruction at address %016" PRIX64, rv_context.rip_s7);
         }
         char buffer[256];

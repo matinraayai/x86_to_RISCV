@@ -37,17 +37,21 @@ typedef struct context_ {
     ZyanU64 r13_a4;
     ZyanU64 r14_a5;
     ZyanU64 r15_a6;
-    ZyanU8* inst_ptr; //A pointer to the current instruction in the mother process.
+    ZyanU8* inst_ptr; //A pointer to the current instruction in the mother process. Might be removed as it's not really
+    //needed.
 } RVContext;
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
 
-void rvContextInitMemory(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem);
+void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem);
 
 void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str);
 
 bool rvContextEndOfExecution(RVContext* rv_context);
 
+
+//Had to move these here due to the need to access memory.
+//TODO: move this back to elf parse.
 void printSectionHeaders(Elf64_t* elf64, RVContext* rv_context);
 
 void printProgramHeaders(Elf64_t* elf64);

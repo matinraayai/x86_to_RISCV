@@ -17,6 +17,7 @@ typedef struct elf_t_ {
     Elf64_Ehdr*     hdr; // Header table.
     Elf64_Phdr*     p_hdr; // Program header table.
     Elf64_Shdr*     s_hdr; // Section header table.
+    ZyanU8*         s_names; // For keeping track of section names.
 } Elf64_t;
 
 Elf64_t initElfFile(char* path, FILE* out_str, FILE* err_str);
