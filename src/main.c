@@ -4,13 +4,13 @@
 #include <Zydis/Zydis.h>
 #include <Zydis/Decoder.h>
 #include <rvcontext.h>
-
+#define INST_WINDOW_SIZE 15
 
 int main(int argc, char* argv[]) {
     Elf64_t x86elf = elfInit(argv[1], stdout, stderr);
     RVContext rv_context;
     rvContextInit(&rv_context, &x86elf, stderr);
-    printSectionHeaders(&x86elf, &rv_context);
+    printSectionHeaders(&x86elf);
     printProgramHeaders(&x86elf);
 
     // Initialize decoder context
@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     ZydisFormatter formatter;
     ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 
-    const ZyanUSize window = 15;
+    const ZyanUSize window = INST_WINDOW_SIZE;
     ZydisDecodedInstruction instruction;
     while (!rvContextEndOfExecution(&rv_context)) {
         if (!ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, rv_context.rip_s7 + rv_context.mem, window, &instruction))) {

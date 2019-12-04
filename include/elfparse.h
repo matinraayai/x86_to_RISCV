@@ -20,20 +20,13 @@ typedef struct elf_t_ {
     ZyanU8*         s_names; // For keeping track of section names.
 } Elf64_t;
 
-Elf64_t initElfFile(char* path, FILE* out_str, FILE* err_str);
-
-void initElfHeader(Elf64_t* elf64);
-
-void initElfProgramHeader(Elf64_t* elf64);
-
-void checkElfFile(Elf64_t* elf64, FILE* out_str, FILE* err_str);
-
-void initElfSectionHeaderTables(Elf64_t* elf64);
-
 Elf64_t elfInit(char* path, FILE* out_str, FILE* err_str);
 
 void elfDestroy(Elf64_t* elf64);
 
+//Had to move these here due to the need to access memory.
+void printSectionHeaders(Elf64_t* elf64);
 
+void printProgramHeaders(Elf64_t* elf64);
 
 #endif //ELFPARSE_H

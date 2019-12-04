@@ -49,10 +49,4 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
 
 bool rvContextEndOfExecution(RVContext* rv_context);
 
-
-//Had to move these here due to the need to access memory.
-//TODO: move this back to elf parse.
-void printSectionHeaders(Elf64_t* elf64, RVContext* rv_context);
-
-void printProgramHeaders(Elf64_t* elf64);
 #endif //X86_TO_RISCV_RVCONTEXT_H
