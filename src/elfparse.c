@@ -19,6 +19,16 @@ void initElfHeader(Elf64_t* elf64) {
     read(elf64->fd, (void *)(elf64->hdr), sizeof(Elf64_Ehdr));
 }
 
+void initElfProgramHeader(Elf64_t* elf64) {
+    Elf64_Ehdr* elf_header = elf64->hdr;
+    Elf64_Phdr* p_header_table = malloc(elf_header->e_phnum * elf_header->e_phentsize);
+    lseek(elf64->fd, (off_t) elf_header->e_phoff, SEEK_SET);
+    for (int i = 0; i < elf_header->e_phnum; i++) {
+        read(elf64->fd, (void *)&p_header_table[i], elf_header->e_phentsize);
+    }
+    elf64->p_hdr = p_header_table;
+}
+
 void checkElfFile(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
     Elf64_Ehdr* elf_header = elf64->hdr;
     fprintf(out_str, "Checking the ELF file...\n");
@@ -62,18 +72,28 @@ void initElfSectionHeaderTables(Elf64_t* elf64) {
 
 void initElfSections(Elf64_t* elf64) {
     Elf64_Ehdr* elf_header = elf64->hdr;
-    Elf64_Shdr* sec_header_table = elf64->s_hdr;
-    elf64->sect = malloc(elf_header->e_shnum * sizeof(ZyanU8*));
+    Elf64_Shdr* s_hdr_table = elf64->s_hdr;
+    ZyanUSize mem_size = 0;
+    //TODO: If a better way to do this is found, replace this.
+    for (int i = elf_header->e_shnum - 1; i > -1; i--) {
+        if (s_hdr_table[i].sh_addr > 0) {
+            mem_size = s_hdr_table[i].sh_addr + s_hdr_table[i].sh_size;
+            break;
+        }
+    }
+    elf64->sect = malloc(mem_size);
+    ////
     for (int i = 0; i < elf_header->e_shnum; i++) {
-        elf64->sect[i] = malloc(sec_header_table[i].sh_size);
-        lseek(elf64->fd, (off_t) sec_header_table[i].sh_offset, SEEK_SET);
-        read(elf64->fd, (void *)elf64->sect[i], sec_header_table[i].sh_size);
-    };
+        ZyanUSize target_addr = s_hdr_table[i].sh_addr;
+        lseek(elf64->fd, (off_t) s_hdr_table[i].sh_offset, SEEK_SET);
+        read(elf64->fd, (void *) (elf64->sect + target_addr), s_hdr_table[i].sh_size);
+    }
 }
 
 Elf64_t elfInit(char* path, FILE* out_str, FILE* err_str) {
     Elf64_t elf64 = initElfFile(path, out_str, err_str);
     initElfHeader(&elf64);
+    initElfProgramHeader(&elf64);
     checkElfFile(&elf64, out_str, err_str);
     initElfSectionHeaderTables(&elf64);
     initElfSections(&elf64);
@@ -82,28 +102,10 @@ Elf64_t elfInit(char* path, FILE* out_str, FILE* err_str) {
 
 void elfDestroy(Elf64_t* elf64) {
     close(elf64->fd);
-    for (int i = 0; i < elf64->hdr->e_shnum; i++) {
-        free(elf64->sect[i]);
-    }
     free(elf64->sect);
     free(elf64->hdr);
     free(elf64->s_hdr);
 }
-
-uint32_t elfTextSectionIndex(Elf64_t* elf64, FILE* err_str) {
-    Elf64_Shdr* sh_table = elf64->s_hdr;
-    uint32_t num_sec = elf64->hdr->e_shnum;
-    ZyanU8* sh_str = (elf64->sect)[elf64->hdr->e_shstrndx];
-    /* Read section-header string-table */
-    for(uint32_t i = 0; i < num_sec; i++) {
-        if (!strcmp(".text", (char*) sh_str + sh_table[i].sh_name)) {
-            return i;
-        }
-    }
-    fprintf(err_str, "The elf file did not contain any starting point for execution.");
-    exit(-1);
-}
-
 
 
 //For debugging.
@@ -112,7 +114,9 @@ void printSectionHeaders(Elf64_t* elf64)
     uint32_t i;
     Elf64_Shdr* sh_table = elf64->s_hdr;
     Elf64_Ehdr* eh = elf64->hdr;
-    char* sh_str = (elf64->sect)[eh->e_shstrndx];
+    int snmdx = eh->e_shstrndx;
+
+    unsigned char* sh_str = (unsigned char*) elf64->sect + sh_table[snmdx].sh_addr;
     /* Read section-header string-table */
     printf("========================================");
     printf("========================================\n");
@@ -122,14 +126,40 @@ void printSectionHeaders(Elf64_t* elf64)
     printf("========================================\n");
     for(i=0; i<eh->e_shnum; i++) {
         printf(" %03d ", i);
-        printf("0x%08x ", sh_table[i].sh_offset);
-        printf("0x%08x ", sh_table[i].sh_addr);
-        printf("0x%08x ", sh_table[i].sh_size);
-        printf("%4d ", sh_table[i].sh_addralign);
-        printf("0x%08x ", sh_table[i].sh_flags);
-        printf("0x%08x ", sh_table[i].sh_type);
-        //sh_str = read_section(fd, &sh_table[eh->e_shstrndx]);
-        printf("%s\t", (sh_str + sh_table[i].sh_name));
+        printf("0x%08lx ", sh_table[i].sh_offset);
+        printf("0x%08lx ", sh_table[i].sh_addr);
+        printf("0x%08lx ", sh_table[i].sh_size);
+        printf("%4lu ", sh_table[i].sh_addralign);
+        printf("0x%08lx ", sh_table[i].sh_flags);
+        printf("0x%08ux ", sh_table[i].sh_type);
+        printf("%s", (sh_str + sh_table[i].sh_name));
+        printf("\n");
+    }
+    printf("========================================");
+    printf("========================================\n");
+    printf("\n");	/* end of section header table */
+}
+
+void printProgramHeaders(Elf64_t* elf64)
+{
+    uint32_t i;
+    Elf64_Phdr* ph_table = elf64->p_hdr;
+    Elf64_Ehdr* eh = elf64->hdr;
+    printf("========================================");
+    printf("========================================\n");
+    printf(" idx offset     virt-addr  phy-addr       type"
+           " Memsize    FileSize      Flags\n");
+    printf("========================================");
+    printf("========================================\n");
+    for(i=0; i<eh->e_phnum; i++) {
+        printf(" %03d ", i);
+        printf("0x%08lx ", ph_table[i].p_offset);
+        printf("0x%08lx ", ph_table[i].p_vaddr);
+        printf("0x%08lx ", ph_table[i].p_paddr);
+        printf("%4d ", ph_table[i].p_type);
+        printf("0x%08lx ", ph_table[i].p_memsz);
+        printf("0x%08lx ", ph_table[i].p_filesz);
+        printf("0x%08x ", ph_table[i].p_flags);
         printf("\n");
     }
     printf("========================================");

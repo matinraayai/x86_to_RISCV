@@ -3,16 +3,15 @@
 #include <inttypes.h>
 #include <Zydis/Zydis.h>
 #include <Zydis/Decoder.h>
-#include <encoder.h>
+#include <rvcontext.h>
 
 
 int main(int argc, char* argv[]) {
     Elf64_t x86elf = elfInit(argv[1], stdout, stderr);
     printSectionHeaders(&x86elf);
+    printProgramHeaders(&x86elf);
     RVContext rv_context;
     rvContextInit(&rv_context, &x86elf, stderr);
-
-    ZyanU8* data = x86elf.sect[14];
 
     // Initialize decoder context
     ZydisDecoder decoder;
@@ -22,23 +21,19 @@ int main(int argc, char* argv[]) {
     ZydisFormatter formatter;
     ZydisFormatterInit(&formatter, ZYDIS_FORMATTER_STYLE_INTEL);
 
-
-    ZyanU64 runtime_address = x86elf.s_hdr[14].sh_addr;
-    ZyanUSize pc = 0;
     const ZyanUSize window = 15;
     ZydisDecodedInstruction instruction;
-    while (pc < x86elf.s_hdr[14].sh_size) {
-        if (!ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, data, window, &instruction))) {
-            fprintf(stderr, "Failed to decode the instruction at address %016" PRIX64, runtime_address);
+
+    while (rvContextEndOfExecution(&rv_context)) {
+        if (!ZYAN_SUCCESS(ZydisDecoderDecodeBuffer(&decoder, rv_context.inst_ptr, window, &instruction))) {
+            fprintf(stderr, "Failed to decode the instruction at address %016" PRIX64, rv_context.rip_s7);
         }
-        printf("%016" PRIX64 "  ", runtime_address);
         char buffer[256];
+
         ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
-                                        runtime_address);
+                                        rv_context.rip_s7);
         puts(buffer);
-        pc += instruction.length;
-        data += instruction.length;
-        runtime_address += instruction.length;
+        rvContextExecute(&rv_context, &instruction, &x86elf, stderr);
     }
     elfDestroy(&x86elf);
     return 0;
