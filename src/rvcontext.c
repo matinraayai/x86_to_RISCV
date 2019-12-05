@@ -463,6 +463,34 @@ ZyanU64* getRegOperandInContext(RVContext* rv_context, ZydisDecodedOperand opera
     }
 }
 
+void getMemOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand, FILE* err_str) {
+    switch (operand.mem.type) {
+        case ZYDIS_MEMOP_TYPE_INVALID:
+            fprintf(err_str, "Encountered an invalid memory operand.");
+            break;
+        case ZYDIS_MEMOP_TYPE_MEM:
+            break;
+        case ZYDIS_MEMOP_TYPE_AGEN:
+            break;
+        case ZYDIS_MEMOP_TYPE_MIB:
+            break;
+    }
+}
+
+void getPtrOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand) {
+
+}
+
+ZyanU64* getImmOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx) {
+    if (operand.imm.is_signed) {
+        rv_context->t[tmp_idx] = (ZyanU64) operand.imm.value.s;
+    }
+    else {
+        rv_context->t[tmp_idx] = (ZyanU64) operand.imm.value.u;
+    }
+    return &(rv_context->t[tmp_idx]);
+}
+
 
 ZyanU64* getOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
     switch(operand.type) {
@@ -472,14 +500,12 @@ ZyanU64* getOperandInContext(RVContext* rv_context, ZydisDecodedOperand operand,
         case ZYDIS_OPERAND_TYPE_REGISTER:
             return getRegOperandInContext(rv_context, operand);
         case ZYDIS_OPERAND_TYPE_MEMORY:
-            fprintf(err_str, "Not implemented!");
-            break;
+            return getImmOperandInContext(rv_context, operand, tmp_idx);
         case ZYDIS_OPERAND_TYPE_POINTER:
             fprintf(err_str, "Not implemented!");
             break;
         case ZYDIS_OPERAND_TYPE_IMMEDIATE:
-            fprintf(err_str, "Not implemented!");
-            break;
+            return getImmOperandInContext(rv_context, operand, tmp_idx);
     }
 }
 
@@ -513,7 +539,7 @@ void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     rv_context->t[4] = *op_src ^ *op_dst;
     rv_context->t[4] = rv_context->t[4] << (rv_context->t[2]);
     rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
-    rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
+    rv_context->t[4] = (rv_context->t[4]) | (rv_context->t[3]);
     setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
     //Flags
     rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
@@ -530,22 +556,74 @@ void executeMOV(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
     rv_context->t[4] = (*op_src) << (rv_context->t[2]);
     rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
-    rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
+    rv_context->t[4] = (rv_context->t[4]) | (rv_context->t[3]);
     setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
 }
 
 void executePOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    //Read the memory associated with the stack pointer.
+    rv_context->t[1] = (ZyanU64) (rv_context->mem + rv_context->rsp_sp);
+    switch (instruction->operand_width) {
+        case 16:
+            rv_context->t[1] = *((ZyanU16*) rv_context->t[1]);
+            rv_context->rsp_sp += 2;
+            break;
+        case 32:
+            rv_context->t[1] = *((ZyanU32*) rv_context->t[1]);
+            rv_context->rsp_sp += 4;
+            break;
+        case 64:
+            rv_context->t[1] = *((ZyanU64*) rv_context->t[1]);
+            rv_context->rsp_sp += 8;
+            break;
+    }
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
+    rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
+    rv_context->t[1] = rv_context->t[1] << (rv_context->t[2]);
+    rv_context->t[1] = rv_context->t[1] >> (rv_context->t[2]);
+    rv_context->t[3] = (rv_context->t[3]) | (rv_context->t[1]);
+    setOperandInContext(rv_context, instruction->operands[0], rv_context->t[3], err_str);
 }
 
 void executeAND(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_src = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
+    rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
+    rv_context->t[4] = *op_src & *op_dst;
+    rv_context->t[4] = rv_context->t[4] << (rv_context->t[2]);
+    rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
+    rv_context->t[4] = (rv_context->t[4]) | (rv_context->t[3]);
+    setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
+    //Flags
+    rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
+    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
+    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
 }
 
 void executePUSH(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    //Read the memory associated with the stack pointer.
+    rv_context->t[1] = (ZyanU64) rv_context->mem + rv_context->rsp_sp;
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
+    switch (instruction->operand_width) {
+        case 16:
+            rv_context->rsp_sp -= 2;
+            *((ZyanU16*) rv_context->t[1]) = rv_context->t[3];
+            break;
+        case 32:
+            rv_context->rsp_sp -= 4;
+            *((ZyanU32*) rv_context->t[1]) = rv_context->t[3];
+            break;
+        case 64:
+            rv_context->rsp_sp -= 8;
+            *((ZyanU64*) rv_context->t[1]) = rv_context->t[3];
+            break;
+    }
 }
 
 void executeLEA(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -554,69 +632,69 @@ void executeLEA(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 }
 
 void executeSUB(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
+    ZyanU64* op_dst = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
+    ZyanU64* op_src = getOperandInContext(rv_context, instruction->operands[1], 1, err_str);
+    rv_context->t[2] = 64 - instruction->operand_width;
+    rv_context->t[3] = (*op_dst) >> (rv_context->t[2]);
+    rv_context->t[3] = rv_context->t[3] << (rv_context->t[2]);
+    rv_context->t[4] = *op_src - *op_dst;
+    rv_context->t[4] = rv_context->t[4] << (rv_context->t[2]);
+    rv_context->t[4] = rv_context->t[4] >> (rv_context->t[2]);
+    rv_context->t[4] = (rv_context->t[4]) || (rv_context->t[3]);
+    setOperandInContext(rv_context, instruction->operands[0], rv_context->t[4], err_str);
+    //Flags
+    rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
+    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
+    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
 }
 
 void executeSAR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeCALL(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeTEST(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeJZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeHLT(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
+
 }
 
 void executeNOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeJMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     ZyanU64* op_1 = getOperandInContext(rv_context, instruction->operands[0], 0, err_str);
-    printf("Found an instruction!");
 }
 
 void executeSHR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
 }
 
 void executeJNZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
 }
 
 void executeLEAVE(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    printf("Found an instruction!");
 }
 
 

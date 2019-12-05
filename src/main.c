@@ -30,10 +30,11 @@ int main(int argc, char* argv[]) {
             exit(-1);
         }
         char buffer[256];
-        rvContextExecute(&rv_context, &instruction, &x86elf, stderr);
         ZydisFormatterFormatInstruction(&formatter, &instruction, buffer, sizeof(buffer),
                                         rv_context.rip_s7);
         puts(buffer);
+        rvContextExecute(&rv_context, &instruction, &x86elf, stderr);
+
     }
     rvContextDestroy(&rv_context);
     elfDestroy(&x86elf);
