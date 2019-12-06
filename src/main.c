@@ -34,7 +34,6 @@ int main(int argc, char* argv[]) {
                                         rv_context.rip_s7);
         puts(buffer);
         rvContextExecute(&rv_context, &instruction, &x86elf, stderr);
-
     }
     rvContextDestroy(&rv_context);
     elfDestroy(&x86elf);

@@ -2,6 +2,7 @@
 #define X86_TO_RISCV_RVCONTEXT_H
 #include <elfparse.h>
 #include <Zydis/DecoderTypes.h>
+
 typedef struct {
     ZyanBool cf;
     ZyanBool pf;
@@ -22,11 +23,12 @@ typedef struct {
     ZyanBool id;
 } Flag;
 
-
 typedef struct {
-    // All Elf file sections that are supposed to be in the memory reside here.
+    // All Elf file sections that are supposed to be in the memory reside here. The base pointer to memory resides in
+    //$a7.
     ZyanU8* mem;
     //General Purpose Registers:
+    ZyanU64 x0; //Believe it or not, it has proved useful to have a zero register.
     ZyanU64 rax_s1;
     ZyanU64 rbx_s2;
     ZyanU64 rcx_s3;
@@ -39,11 +41,11 @@ typedef struct {
     ZyanU64 rsi_s6;
     ZyanU64 rip_s7; //Instruction Pointer, have no choice but to map it to a GPR in RISC-V.
     struct {
-        ZyanU32 ds; //The legacy data segment register.
-        ZyanU32 cs; //The legacy Code segment register. Needed for Nop operation.
+        ZyanU16 ds; //The legacy data segment register.
+        ZyanU16 cs; //The legacy Code segment register. Needed for Nop operation.
     } seg_s8;
     struct {
-        ZyanU16 ss; //Stack segment register. Might not be needed by modern OS.
+        ZyanU16 ss; //Stack segment register. Might not be needed by modern OS in protected mode.
         ZyanU16 es; //Extra segment register.
         ZyanU16 fs; //Extra segment register.
         ZyanU16 gs; //Extra segment register.
@@ -58,8 +60,9 @@ typedef struct {
     ZyanU64 r13_a4;
     ZyanU64 r14_a5;
     ZyanU64 r15_a6;
-    //Temporary registers used for micro op implementation.
-    ZyanU64 t[7];
+    //Temporary registers used for micro op implementation. The first 6 are used for instructions, the last 2 are
+    //reserved for intermediate memory operations.
+    ZyanU64 t[8];
 } RVContext;
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
