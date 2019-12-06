@@ -294,6 +294,32 @@ void copyMemOperandToTempInContext(RVContext* rv_context, ZydisDecodedOperand op
     }
 }
 
+void commitMemOperandFromTempInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
+    //$6 = index_reg
+    copyRegOperandToTempInContext(rv_context, operand.mem.index, 6);
+    //$7 = base_reg.
+    copyRegOperandToTempInContext(rv_context, operand.mem.base, 7);
+
+    switch (operand.mem.type) {
+        case ZYDIS_MEMOP_TYPE_INVALID:
+            fprintf(err_str, "Encountered an invalid memory operand.");
+            break;
+        case ZYDIS_MEMOP_TYPE_MEM:
+            rv_context->t[6] = rv_context->t[6] * operand.mem.scale + operand.mem.disp.value;
+            rv_context->t[6] = rv_context->t[7] + rv_context->t[6];
+            //$7 = seg_reg.
+            copyRegOperandToTempInContext(rv_context, operand.mem.segment, 7);
+            rv_context->t[6] = rv_context->t[7] + rv_context->t[6];
+            rv_context->t[6] = (ZyanU64) (rv_context->mem + rv_context->t[6]);
+            *((ZyanU64*) rv_context->t[6]) = rv_context->t[tmp_idx];
+            break;
+        case ZYDIS_MEMOP_TYPE_AGEN:
+            break;
+        case ZYDIS_MEMOP_TYPE_MIB:
+            break;
+    }
+}
+
 void copyPtrOperandToTempInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
 
 }
@@ -339,7 +365,7 @@ void commitOperandFromTempInContext(RVContext* rvContext, ZydisDecodedOperand op
             commitRegOperandFromTempInContext(rvContext, operand.reg.value, tmp_idx);
             break;
         case ZYDIS_OPERAND_TYPE_MEMORY:
-            fprintf(err_str, "Not implemented!");
+            commitMemOperandFromTempInContext(rvContext, operand, tmp_idx, err_str);
             break;
         case ZYDIS_OPERAND_TYPE_POINTER:
             fprintf(err_str, "Not implemented!");
@@ -351,8 +377,14 @@ void commitOperandFromTempInContext(RVContext* rvContext, ZydisDecodedOperand op
 }
 
 void preserveMSBs(RVContext* rv_context, size_t addr_size_idx, size_t src_idx, size_t dst_idx) {
-    rv_context->t[dst_idx] = rv_context->t[src_idx] >> rv_context->t[addr_size_idx];
-    rv_context->t[dst_idx] = rv_context->t[dst_idx] << rv_context->t[addr_size_idx];
+    //Take into account weird behavior of >> when operand size is 64.
+    if (rv_context->t[addr_size_idx] != 64) {
+        rv_context->t[dst_idx] = rv_context->t[src_idx] >> rv_context->t[addr_size_idx];
+        rv_context->t[dst_idx] = rv_context->t[dst_idx] << rv_context->t[addr_size_idx];
+    }
+    else {
+        rv_context->t[dst_idx] = 0;
+    }
 }
 
 void preserveLSBs(RVContext* rv_context, size_t addr_size_idx, size_t src_idx, size_t dst_idx) {
@@ -451,7 +483,7 @@ void executePUSH(RVContext* rv_context, ZydisDecodedInstruction* instruction, FI
     rv_context->t[2] = instruction->operand_width;
     preserveLSBs(rv_context, 2, 0, 0);
     //Read the memory associated with the stack pointer.
-    rv_context->t[2] = rv_context->t[2] >> 3;
+    rv_context->t[2] = (rv_context->t[2]) >> 3;
     rv_context->rsp_sp -= rv_context->t[2];
     rv_context->t[1] = (ZyanU64) rv_context->mem + rv_context->rsp_sp;
     switch (instruction->operand_width) {
@@ -504,15 +536,31 @@ void executeSAR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 }
 
 void executeCALL(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    rv_context->rsp_sp -= 8;
+    rv_context->t[0] = (ZyanU64) rv_context->mem + rv_context->rsp_sp;
+    *((ZyanU64*) rv_context->t[0]) = rv_context->rip_s7 + instruction->length;
     copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    rv_context->rip_s7 = rv_context->rip_s7 + rv_context->t[0];
 }
 
 void executeTEST(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    copyOperandToTempInContext(rv_context, instruction->operands[1], 1, err_str);
+    rv_context->t[2] = instruction->operand_width;
+    preserveLSBs(rv_context, 2, 0, 0);
+    preserveLSBs(rv_context, 2, 1, 1);
+    rv_context->t[0] = rv_context->t[0] & rv_context->t[1];
+    rv_context->r_flags_s10.cf = 0;
+    rv_context->r_flags_s10.of = 0;
+    rv_context->r_flags_s10.zf = rv_context->t[0] == rv_context->x0;
 }
 
 void executeJZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    if (rv_context->r_flags_s10.zf) {
+        copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+        rv_context->rip_s7 += rv_context->t[0];
+    }
+
 }
 
 void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -536,7 +584,30 @@ void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 }
 
 void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    rv_context->t[0] =rv_context->rip_s7;
+    //Read the memory associated with the stack pointer and put it in $1
+    rv_context->t[1] = (ZyanU64) (rv_context->mem + rv_context->rsp_sp);
+    //$1 will have the contents of the address after this switch statement.
+    switch (instruction->operand_width) {
+        case 16:
+            rv_context->t[1] = *((ZyanU16*) rv_context->t[1]);
+            rv_context->rsp_sp += 2;
+            break;
+        case 32:
+            rv_context->t[1] = *((ZyanU32*) rv_context->t[1]);
+            rv_context->rsp_sp += 4;
+            break;
+        case 64:
+            rv_context->t[1] = *((ZyanU64*) rv_context->t[1]);
+            rv_context->rsp_sp += 8;
+            break;
+    }
+    rv_context->t[2] = instruction->operand_width;
+    preserveMSBs(rv_context, 2, 0, 0);
+    preserveLSBs(rv_context, 2, 1, 1);
+    //The instruction length is subtracted as it will be automatically added afterwards.
+    rv_context->t[2] = instruction->length;
+    rv_context->rip_s7 = ((rv_context->t[1]) | (rv_context->t[0])) - rv_context->t[2];
 }
 
 void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -564,6 +635,13 @@ void executeJNZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 void executeLEAVE(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
 }
 
+void executeSETZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    //dst = $0
+    copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    rv_context->t[1] = instruction->operand_width;
+    preserveMSBs(rv_context, 1, 0, 0);
+    rv_context->t[1] += (ZyanU64) (rv_context->r_flags_s10.zf);
+}
 
 void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem) {
     Elf64_Ehdr* elf_header = elf64->hdr;
@@ -578,7 +656,9 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
     }
     //Allocate the memory and read in the memory image from the elf file.
     rv_context->mem = malloc(mem_size + stack_mem);
-    rv_context->rbp_fp = rv_context->rsp_sp = (ZyanU64) mem_size;
+    rv_context->rbp_fp = rv_context->rsp_sp = (ZyanU64) (mem_size + stack_mem);
+    rv_context->seg_s8.ds = rv_context->seg_s8.cs = 0;
+    rv_context->seg_s9.ss = rv_context->seg_s9.fs = 0;
     for (int i = 0; i < elf_header->e_shnum; i++) {
         if (s_hdr_table[i].sh_flags != 0 && s_hdr_table[i].sh_flags != 0x30) {
             lseek(elf64->fd, (off_t) s_hdr_table[i].sh_offset, SEEK_SET);
@@ -602,7 +682,7 @@ void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str) {
     rv_context->x0 = 0;
     rv_context->rip_s7 = elf64->hdr->e_entry;
     //Initialize memory and memory related registers.
-    rvContextInitMemoryVars(rv_context, elf64, 1024);
+    rvContextInitMemoryVars(rv_context, elf64, 16384);
 }
 
 
@@ -672,6 +752,8 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
         case ZYDIS_MNEMONIC_XOR:
             executeXOR(rv_context, instruction, err_str);
             break;
+        case ZYDIS_MNEMONIC_SETZ:
+            executeSETZ(rv_context, instruction, err_str);
     }
 
     rv_context->rip_s7 += instruction->length;
