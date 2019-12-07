@@ -18,11 +18,25 @@ typedef struct {
     Elf64_Ehdr*     hdr; // Header table.
     Elf64_Phdr*     p_hdr; // Program header table.
     Elf64_Shdr*     s_hdr; // Section header table.
-    ZyanU8*         s_names; // For keeping track of section names.
+    char*           s_names; // For keeping track of section names.
+    Elf64_Sym*      sym_tbl; // For keeping track of symbols in the program.
+    char*           sym_names; // For keeping track of symbol names.
+    uint32_t        sym_count; // For keeping track of number of symbols.
 } Elf64_t;
 
+/**
+ * Initializes an Elf64_t structure using its path on disk.
+ * @param path to the elf file on disk.
+ * @param out_str output stream for progress indication.
+ * @param err_str error stream for error diagnostics.
+ * @return an initialized Elf64_t structure.
+ */
 Elf64_t initElf64_t(char* path, FILE* out_str, FILE* err_str);
 
+/**
+ * Deallocates all the resources of elf64 and closes the elf file associated with it.
+ * @param elf64 reference to the Elf64_t struct.
+ */
 void elfDestroy(Elf64_t* elf64);
 
 #endif //ELFPARSE_H

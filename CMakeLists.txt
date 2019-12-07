@@ -9,4 +9,4 @@ file(GLOB ZYDIS_SOURCE "zydis/src/*.c" "zydis/src/Generated/*.inc" "zydis/depend
 ### Project:
 include_directories(Main include)
 file(GLOB PROJ_SOURCE "src/*.c")
-add_executable(Main ${ZYDIS_SOURCE} ${PROJ_SOURCE})
+add_executable(main ${ZYDIS_SOURCE} ${PROJ_SOURCE})

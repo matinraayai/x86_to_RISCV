@@ -1,6 +1,5 @@
 #include <elfparse.h>
 
-
 /**
  * Initializes the file descriptor field inside the passed Elf64_t* reference.
  * Exits the program upon failure.
@@ -56,6 +55,28 @@ void verifyElfFile(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
         fprintf(err_str, "ELF binary verification failed.\n");
         exit(-1);
     }
+}
+
+char* readElfSectionFromHeader(Elf64_t* elf64, Elf64_Shdr* sh, FILE* out_str, FILE* err_str)
+{
+    char* buff = malloc(sh->sh_size);
+
+    if (buff == NULL) {
+        fprintf(err_str, "Failed to allocate buffer for the section.\n");
+        exit(-1);
+    }
+
+    if (lseek(elf64->fd, (off_t) sh->sh_offset, SEEK_SET) != (off_t) sh->sh_offset) {
+        fprintf(err_str, "Failed to seek to the symbol table's offset in the elf file.\n");
+        exit(-1);
+    }
+
+    if (read(elf64->fd, (void *)buff, sh->sh_size) != sh->sh_size) {
+        fprintf(err_str, "Failed to read the symbol table from the elf file.\n");
+        exit(-1);
+    }
+
+    return buff;
 }
 
 /**
@@ -172,6 +193,32 @@ void initElfSectionNames(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
 }
 
 /**
+ * Initializes variables in a Elf64_t related to symbol names and tables from the elf file.
+ * @param elf64 reference to the Elf64_t struct.
+ * @param out_str output stream for keeping track of progress.
+ * @param err_str error stream for error diagnostics.
+ */
+void initElfSymbolsTableVars(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
+    fprintf(out_str, "Initializing the symbol names and tables...\n");
+    //Find the index of the section containing the symbols:
+    Elf64_Shdr *sh_table = elf64->s_hdr;
+    //The symbol table is more likely located at the end.
+    size_t sym_sec_idx;
+    for (int i = elf64->hdr->e_shnum - 1; i > -1; i--) {
+        if ((sh_table[i].sh_type == SHT_SYMTAB) || (sh_table[i].sh_type == SHT_DYNSYM)) {
+            sym_sec_idx = i;
+            break;
+        }
+    }
+    //Read in the Symbol table.
+    uint32_t str_tbl_ndx = sh_table[sym_sec_idx].sh_link;
+    elf64->sym_tbl = (Elf64_Sym*) readElfSectionFromHeader(elf64, &elf64->s_hdr[sym_sec_idx], out_str, err_str);
+    elf64->sym_names = readElfSectionFromHeader(elf64, &sh_table[str_tbl_ndx], out_str, err_str);
+    elf64->sym_count = (sh_table[sym_sec_idx].sh_size / sizeof(Elf64_Sym));
+    fprintf(out_str, "Initialization complete.\n");
+}
+
+/**
  * Prints statistics regarding the section headers to the output stream.
  * @param elf64 reference to an Elf64_t.
  * @param out_str Output stream for the statistics.
@@ -180,7 +227,7 @@ void printSectionHeaders(Elf64_t* elf64, FILE* out_str)
 {
     Elf64_Shdr* sh_table = elf64->s_hdr;
     Elf64_Ehdr* eh = elf64->hdr;
-    unsigned char* sh_str = (unsigned char*) elf64->s_names;
+    char* sh_str = elf64->s_names;
     /* Read section-header string-table */
     fprintf(out_str, "\nSection headers statistics:\n\n");
     fprintf(out_str, "========================================================================================\n");
@@ -200,17 +247,6 @@ void printSectionHeaders(Elf64_t* elf64, FILE* out_str)
     fprintf(out_str, "========================================================================================\n");
 }
 
-//void print_symbols(Elf64_t *elf64)
-//{
-//    for(int i = 0; i < elf64->hdr->e_shnum; i++) {
-//        if ((sh_table[i].sh_type==SHT_SYMTAB)
-//            || (sh_table[i].sh_type==SHT_DYNSYM)) {
-//            printf("\n[Section %03d]", i);
-//            print_symbol_table(fd, eh, sh_table, i);
-//        }
-//    }
-//}
-
 /**
  * Initializes an Elf64_t structure using its path on disk.
  * @param path to the elf file on disk.
@@ -226,6 +262,7 @@ Elf64_t initElf64_t(char* path, FILE* out_str, FILE* err_str) {
     initElfProgramHeadersTable(&elf64, out_str, err_str);
     initElfSectionHeadersTable(&elf64, out_str, err_str);
     initElfSectionNames(&elf64, out_str, err_str);
+    initElfSymbolsTableVars(&elf64, out_str, err_str);
     printSectionHeaders(&elf64, out_str);
     return elf64;
 }

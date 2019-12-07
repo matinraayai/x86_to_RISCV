@@ -1,7 +1,8 @@
-#ifndef X86_TO_RISCV_RVCONTEXT_H
-#define X86_TO_RISCV_RVCONTEXT_H
+#ifndef RVCONTEXT_H
+#define RVCONTEXT_H
 #include <elfparse.h>
 #include <Zydis/DecoderTypes.h>
+#define MAX_STACK_SIZE 16384
 
 typedef struct {
     ZyanBool cf;
@@ -72,4 +73,4 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
 bool rvContextEndOfExecution(RVContext* rv_context);
 
 void rvContextDestroy(RVContext* rv_context);
-#endif //X86_TO_RISCV_RVCONTEXT_H
+#endif //RVCONTEXT_H

@@ -731,7 +731,7 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
         }
     }
     //Find the global pointer, where our program ends.
-    unsigned char* sh_str = (unsigned char*) elf64->s_names;
+    char* sh_str = (unsigned char*) elf64->s_names;
     for (int i = 0; i < elf_header->e_shnum; i++) {
         if(!strcmp(sh_str + s_hdr_table[i].sh_name, ".fini")) {
             rv_context->gp = s_hdr_table[i].sh_addr + s_hdr_table[i].sh_size;
@@ -739,15 +739,27 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
         }
     }
 
+
 }
 
 
 void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str) {
-    //Find the address of the text segment and put it into the pc.
+
     rv_context->x0 = 0;
-    rv_context->rip_s7 = elf64->hdr->e_entry;
+    //Find the address of the main symbol and put it into the pc.
+    for(uint32_t i = 0; i < elf64->sym_count; i++) {
+        if (!strcmp(elf64->sym_names + elf64->sym_tbl[i].st_name, "main")) {
+            rv_context->rip_s7 = elf64->sym_tbl[i].st_value;
+            printf("0x%08lx ", elf64->sym_tbl[i].st_value);
+            printf("0x%02x ", ELF32_ST_BIND(elf64->sym_tbl[i].st_info));
+            printf("0x%02x ", ELF32_ST_TYPE(elf64->sym_tbl[i].st_info));
+            printf("%s\n", (elf64->sym_names + elf64->sym_tbl[i].st_name));
+        }
+    }
+    //TODO: Find a way to setup the program using the original entry point.
+    //rv_context->rip_s7 = elf64->hdr->e_entry;
     //Initialize memory and memory related registers.
-    rvContextInitMemoryVars(rv_context, elf64, 16384);
+    rvContextInitMemoryVars(rv_context, elf64, MAX_STACK_SIZE);
 }
 
 
