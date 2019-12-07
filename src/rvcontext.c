@@ -664,7 +664,7 @@ void executeHLT(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
 }
 
 void executeNOP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
-    copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    fprintf(err_str, "Reached a NOP. An unconditional branch must not have been taken.");
 }
 
 void executeJMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {

@@ -1,5 +1,6 @@
 /**
- * This file was written with help from https://github.com/TheCodeArtist/elf-parser and the Linux man page.
+ * Header file for handling x86_64 elf files.
+ * This file and its src were written with help from https://github.com/TheCodeArtist/elf-parser and the Linux man page.
  */
 #ifndef ELFPARSE_H
 #define ELFPARSE_H
@@ -20,13 +21,8 @@ typedef struct {
     ZyanU8*         s_names; // For keeping track of section names.
 } Elf64_t;
 
-Elf64_t elfInit(char* path, FILE* out_str, FILE* err_str);
+Elf64_t initElf64_t(char* path, FILE* out_str, FILE* err_str);
 
 void elfDestroy(Elf64_t* elf64);
-
-//Had to move these here due to the need to access memory.
-void printSectionHeaders(Elf64_t* elf64);
-
-void printProgramHeaders(Elf64_t* elf64);
 
 #endif //ELFPARSE_H

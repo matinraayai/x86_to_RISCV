@@ -7,11 +7,9 @@
 #define INST_WINDOW_SIZE 15
 
 int main(int argc, char* argv[]) {
-    Elf64_t x86elf = elfInit(argv[1], stdout, stderr);
+    Elf64_t x86elf = initElf64_t(argv[1], stdout, stderr);
     RVContext rv_context;
     rvContextInit(&rv_context, &x86elf, stderr);
-    printSectionHeaders(&x86elf);
-    printProgramHeaders(&x86elf);
 
     // Initialize decoder context
     ZydisDecoder decoder;
