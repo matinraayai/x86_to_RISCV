@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
     }
     printf("Execution end reached.\n");
     printf("========================================================================================\n");
-
+    rvContextPrint(&rv_context, stdout);
     //Program cleanup:
     rvContextDestroy(&rv_context);
     elf64_tDestroy(&x86elf);

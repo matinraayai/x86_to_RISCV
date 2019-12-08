@@ -72,5 +72,7 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
 
 bool rvContextEndOfExecution(RVContext* rv_context);
 
+void rvContextPrint(RVContext* rv_context, FILE* out_str);
+
 void rvContextDestroy(RVContext* rv_context);
 #endif //RVCONTEXT_H

@@ -443,16 +443,21 @@ void setFlags(RVContext* rv_context, size_t src_size_idx, size_t effective_dst_i
     if (rv_context->t[6]) {
         rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_TRUE;
     }
-    rv_context->t[6] = rv_context->t[0] >> (rv_context->t[src_size_idx] - 1);
-    rv_context->t[7] = rv_context->t[1] >> (rv_context->t[src_size_idx] - 1);
-    rv_context->t[6] = rv_context->t[6] != 0;
-    rv_context->t[7] = rv_context->t[7] != 0;
-    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
-    rv_context->t[7] = rv_context->t[effective_dst_idx] >> (rv_context->t[src_size_idx] - 1);
-    rv_context->t[7] = rv_context->t[7] == 0;
-    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
-    if (rv_context->t[6]) {
-        rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_TRUE;
+    else {
+        rv_context->t[6] = rv_context->t[0] >> (rv_context->t[src_size_idx] - 1);
+        rv_context->t[7] = rv_context->t[1] >> (rv_context->t[src_size_idx] - 1);
+        rv_context->t[6] = rv_context->t[6] != 0;
+        rv_context->t[7] = rv_context->t[7] != 0;
+        rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+        rv_context->t[7] = rv_context->t[effective_dst_idx] >> (rv_context->t[src_size_idx] - 1);
+        rv_context->t[7] = rv_context->t[7] == 0;
+        rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+        if (rv_context->t[6]) {
+            rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_TRUE;
+        }
+        else {
+            rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_FALSE;
+        }
     }
     //Parity Calculation:
     //https://www.geeksforgeeks.org/program-to-find-parity/
@@ -655,14 +660,13 @@ void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     rv_context->t[2] = instruction->operand_width;
     preserveMSBs(rv_context, 2, 0, 3);
     //result = $0
-    rv_context->t[0] = (ZyanU64) ((ZyanI64) rv_context->t[0] + (ZyanI64) rv_context->t[1]);
+    rv_context->t[4] = (ZyanU64) ((ZyanI64) rv_context->t[0] + (ZyanI64) rv_context->t[1]);
     //LSB_result = $0
-    preserveLSBs(rv_context, 2, 0, 0);
-    rv_context->t[0] = (rv_context->t[0]) | (rv_context->t[3]);
-    commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    preserveLSBs(rv_context, 2, 4, 4);
+    rv_context->t[5] = (rv_context->t[4]) | (rv_context->t[3]);
+    commitOperandFromTempInContext(rv_context, instruction->operands[0], 5, err_str);
     //Flags
     setFlags(rv_context, 2, 4);
-    rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
 }
 
 void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -783,7 +787,7 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
     rv_context->mem = malloc(mem_size + stack_mem);
     rv_context->rbp_fp = rv_context->rsp_sp = (ZyanU64) (mem_size + stack_mem);
     rv_context->seg_s8.ds = rv_context->seg_s8.cs = 0;
-    rv_context->seg_s9.ss = rv_context->seg_s9.fs = 0;
+    rv_context->seg_s9.ss = rv_context->seg_s9.fs = rv_context->seg_s9.gs = rv_context->seg_s9.es = 0;
     for (int i = 0; i < elf_header->e_shnum; i++) {
         if (s_hdr_table[i].sh_flags != 0 && s_hdr_table[i].sh_flags != 0x30) {
             lseek(elf64->fd, (off_t) s_hdr_table[i].sh_offset, SEEK_SET);
@@ -801,7 +805,6 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
 
 
 }
-
 
 RVContext rvContextInit(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
     RVContext rv_context;
@@ -830,7 +833,6 @@ RVContext rvContextInit(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
     rvContextInitMemoryVars(&rv_context, elf64, MAX_STACK_SIZE);
     return rv_context;
 }
-
 
 void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     //A giant case switch statement to call the function associated with each instruction.
@@ -919,6 +921,47 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
     rv_context->rip_s7 += instruction->length;
 }
 
+void rvContextPrint(RVContext* rv_context, FILE* out_str) {
+    fprintf(out_str, "Execution Results:\n");
+    fprintf(out_str, "========================================================================================\n");
+    fprintf(out_str, "Final Unsigned Register Values:\n");
+    fprintf(out_str, "                        Unsigned\n");
+    fprintf(out_str, "RAX:                    %lu    \n", rv_context->rax_s1);
+    fprintf(out_str, "RBX:                    %lu    \n", rv_context->rbx_s2);
+    fprintf(out_str, "RCX:                    %lu    \n", rv_context->rcx_s3);
+    fprintf(out_str, "RDX:                    %lu    \n", rv_context->rdx_s4);
+    fprintf(out_str, "RBP:                    %lu    \n", rv_context->rbp_fp);
+    fprintf(out_str, "RSP:                    %lu    \n", rv_context->rsp_sp);
+    fprintf(out_str, "RDI:                    %lu    \n", rv_context->rdi_s5);
+    fprintf(out_str, "RSI:                    %lu    \n", rv_context->rsi_s6);
+    fprintf(out_str, "RIP:                    %lu    \n", rv_context->rip_s7);
+    fprintf(out_str, "DS:                     %hu    \n", rv_context->seg_s8.ds);
+    fprintf(out_str, "CS:                     %hu    \n", rv_context->seg_s8.cs);
+    fprintf(out_str, "SS:                     %hu    \n", rv_context->seg_s9.ss);
+    fprintf(out_str, "ES:                     %hu    \n", rv_context->seg_s9.es);
+    fprintf(out_str, "FS:                     %hu    \n", rv_context->seg_s9.fs);
+    fprintf(out_str, "GS:                     %hu    \n", rv_context->seg_s9.gs);
+    fprintf(out_str, "R8:                     %lu    \n", rv_context->r8_s11);
+    fprintf(out_str, "R9:                     %lu    \n", rv_context->r9_a0);
+    fprintf(out_str, "R10:                    %lu    \n", rv_context->r10_a1);
+    fprintf(out_str, "R11:                    %lu    \n", rv_context->r11_a2);
+    fprintf(out_str, "R12:                    %lu    \n", rv_context->r12_a3);
+    fprintf(out_str, "R13:                    %lu    \n", rv_context->r13_a4);
+    fprintf(out_str, "R14:                    %lu    \n", rv_context->r14_a5);
+    fprintf(out_str, "R15:                    %lu    \n", rv_context->r15_a6);
+    fprintf(out_str, "========================================================================================\n");
+    fprintf(out_str, "Final Stack Content:\n");
+    for (ZyanU64 i = rv_context->rsp_sp; i <rv_context->rbp_fp; i++) {
+        fprintf(out_str, "%x", *(rv_context->mem + i));
+        if (i % 8 == 0 && i != rv_context->rsp_sp) {
+            fprintf(out_str, " ");
+        }
+        if (i % 16 == 0 && i != rv_context->rsp_sp) {
+            fprintf(out_str, "\n");
+        }
+    }
+    fprintf(out_str, "\n========================================================================================\n");
+}
 
 bool rvContextEndOfExecution(RVContext* rv_context) {
     return rv_context->gp == rv_context->rip_s7;
