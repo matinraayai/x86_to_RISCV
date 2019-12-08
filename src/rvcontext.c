@@ -643,7 +643,14 @@ void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     preserveLSBs(rv_context, 2, 1, 1);
     //The instruction length is subtracted as it will be automatically added afterwards.
     rv_context->t[2] = instruction->length;
-    rv_context->rip_s7 = ((rv_context->t[1]) | (rv_context->t[0])) - rv_context->t[2];
+    rv_context->t[0] = ((rv_context->t[1]) | (rv_context->t[0]));
+    //Temporary measure to find the end of execution.
+    if (!rv_context->t[0]) {
+        rv_context->rip_s7 = rv_context->gp - rv_context->t[2];
+    }
+    else {
+        rv_context->rip_s7 = rv_context->t[0] - rv_context->t[2];
+    }
 }
 
 void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -731,7 +738,7 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
         }
     }
     //Find the global pointer, where our program ends.
-    char* sh_str = (unsigned char*) elf64->s_names;
+    char* sh_str = elf64->s_names;
     for (int i = 0; i < elf_header->e_shnum; i++) {
         if(!strcmp(sh_str + s_hdr_table[i].sh_name, ".fini")) {
             rv_context->gp = s_hdr_table[i].sh_addr + s_hdr_table[i].sh_size;
@@ -743,33 +750,35 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
 }
 
 
-void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str) {
-
-    rv_context->x0 = 0;
+RVContext rvContextInit(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
+    RVContext rv_context;
+    rv_context.x0 = 0;
     //Find the address of the main symbol and put it into the pc.
     for(uint32_t i = 0; i < elf64->sym_count; i++) {
         if (!strcmp(elf64->sym_names + elf64->sym_tbl[i].st_name, "main")) {
-            rv_context->rip_s7 = elf64->sym_tbl[i].st_value;
-            printf("0x%08lx ", elf64->sym_tbl[i].st_value);
-            printf("0x%02x ", ELF32_ST_BIND(elf64->sym_tbl[i].st_info));
-            printf("0x%02x ", ELF32_ST_TYPE(elf64->sym_tbl[i].st_info));
-            printf("%s\n", (elf64->sym_names + elf64->sym_tbl[i].st_name));
+            rv_context.rip_s7 = elf64->sym_tbl[i].st_value;
+            fprintf(out_str, "Found program's main entry point at 0x%08lx.\n", elf64->sym_tbl[i].st_value);
+        }
+        else if (i == elf64->sym_count) {
+            fprintf(err_str, "Failed to find the main function's entry point.\n");
+            exit(-1);
         }
     }
     //TODO: Find a way to setup the program using the original entry point.
     //rv_context->rip_s7 = elf64->hdr->e_entry;
     //Initialize memory and memory related registers.
-    rvContextInitMemoryVars(rv_context, elf64, MAX_STACK_SIZE);
+    rvContextInitMemoryVars(&rv_context, elf64, MAX_STACK_SIZE);
+    return rv_context;
 }
 
 
-void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str) {
+void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     //A giant case switch statement to call the function associated with each instruction.
     switch (instruction->mnemonic) {
         default:
         case ZYDIS_MNEMONIC_INVALID:
-            fprintf(err_str, "Encountered a non-implemented operand.");
-            break;
+            fprintf(err_str, "Encountered a non-implemented operation.\n");
+            exit(-1);
         case ZYDIS_MNEMONIC_ADD:
             executeADD(rv_context, instruction, err_str);
             break;

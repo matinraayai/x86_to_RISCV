@@ -254,7 +254,7 @@ void printSectionHeaders(Elf64_t* elf64, FILE* out_str)
  * @param err_str error stream for error diagnostics.
  * @return an initialized Elf64_t structure.
  */
-Elf64_t initElf64_t(char* path, FILE* out_str, FILE* err_str) {
+Elf64_t elf64_tInit(char* path, FILE* out_str, FILE* err_str) {
     Elf64_t elf64;
     initElfFile(&elf64, path, out_str, err_str);
     initElfHeader(&elf64, out_str, err_str);
@@ -271,7 +271,7 @@ Elf64_t initElf64_t(char* path, FILE* out_str, FILE* err_str) {
  * Deallocates all the resources of elf64 and closes the elf file associated with it.
  * @param elf64 reference to the Elf64_t struct.
  */
-void elfDestroy(Elf64_t* elf64) {
+void elf64_tDestroy(Elf64_t* elf64) {
     free(elf64->hdr);
     free(elf64->s_hdr);
     free(elf64->s_names);

@@ -66,9 +66,9 @@ typedef struct {
     ZyanU64 t[8];
 } RVContext;
 
-void rvContextInit(RVContext* rv_context, Elf64_t* elf64, FILE* err_str);
+RVContext rvContextInit(Elf64_t* elf64, FILE* out_str, FILE* err_str);
 
-void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, Elf64_t* elf64, FILE* err_str);
+void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str);
 
 bool rvContextEndOfExecution(RVContext* rv_context);
 
