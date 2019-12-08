@@ -1,5 +1,5 @@
 ## Project Specs
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.10)
 set_property(TARGET PROPERTY C_STANDARD 11)
 project(x86_to_riscv VERSION 0.1)
 ## Project Dependencies
