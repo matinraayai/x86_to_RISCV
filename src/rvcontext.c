@@ -273,44 +273,52 @@ void commitRegOperandFromTempInContext(RVContext* rv_context, ZydisRegister reg,
 }
 
 void copyMemOperandToTempInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
-    //tmp_idx = seg_reg.
-    copyRegOperandToTempInContext(rv_context, operand.mem.segment, tmp_idx);
-    //$7 = base_reg.
+    //$6 = base_reg.
     copyRegOperandToTempInContext(rv_context, operand.mem.base, 6);
-    //$8 = index_reg
+    //$7 = index_reg
     copyRegOperandToTempInContext(rv_context, operand.mem.index, 7);
     switch (operand.mem.type) {
         case ZYDIS_MEMOP_TYPE_INVALID:
             fprintf(err_str, "Encountered an invalid memory operand.");
             break;
         case ZYDIS_MEMOP_TYPE_MEM:
+            //Indirect address generation with register values.
+            rv_context->t[7] = (ZyanU64) ((ZyanI64) (rv_context->t[7] * operand.mem.scale) + operand.mem.disp.value);
+            rv_context->t[6] = (ZyanU64) ((ZyanI64) rv_context->t[7] + (ZyanI64) rv_context->t[6]);
+            //$7 = seg_reg.
+            copyRegOperandToTempInContext(rv_context, operand.mem.segment, 7);
+            rv_context->t[6] = (ZyanU64) ((ZyanI64) rv_context->t[7] + (ZyanI64) rv_context->t[6]);
+            rv_context->t[6] = (ZyanU64) (rv_context->mem + (ZyanI64) rv_context->t[6]);
+            rv_context->t[tmp_idx] = *((ZyanU64*) rv_context->t[6]);
             break;
         case ZYDIS_MEMOP_TYPE_AGEN:
             //Indirect address generation with register values.
             rv_context->t[tmp_idx] = rv_context->t[6] + rv_context->t[tmp_idx] + rv_context->t[7] * operand.mem.scale +
                     operand.mem.disp.value;
+            break;
         case ZYDIS_MEMOP_TYPE_MIB:
             break;
     }
 }
 
 void commitMemOperandFromTempInContext(RVContext* rv_context, ZydisDecodedOperand operand, size_t tmp_idx, FILE* err_str) {
-    //$6 = index_reg
-    copyRegOperandToTempInContext(rv_context, operand.mem.index, 6);
-    //$7 = base_reg.
-    copyRegOperandToTempInContext(rv_context, operand.mem.base, 7);
+    //$6 = base_reg
+    copyRegOperandToTempInContext(rv_context, operand.mem.base, 6);
+    //$7 = index_reg.
+    copyRegOperandToTempInContext(rv_context, operand.mem.index, 7);
 
     switch (operand.mem.type) {
         case ZYDIS_MEMOP_TYPE_INVALID:
             fprintf(err_str, "Encountered an invalid memory operand.");
             break;
         case ZYDIS_MEMOP_TYPE_MEM:
-            rv_context->t[6] = rv_context->t[6] * operand.mem.scale + operand.mem.disp.value;
-            rv_context->t[6] = rv_context->t[7] + rv_context->t[6];
+            //Indirect address generation with register values.
+            rv_context->t[7] = (ZyanU64) ((ZyanI64) (rv_context->t[7] * operand.mem.scale) + operand.mem.disp.value);
+            rv_context->t[6] = (ZyanU64) ((ZyanI64) rv_context->t[7] + (ZyanI64) rv_context->t[6]);
             //$7 = seg_reg.
             copyRegOperandToTempInContext(rv_context, operand.mem.segment, 7);
-            rv_context->t[6] = rv_context->t[7] + rv_context->t[6];
-            rv_context->t[6] = (ZyanU64) (rv_context->mem + rv_context->t[6]);
+            rv_context->t[6] = (ZyanU64) ((ZyanI64) rv_context->t[7] + (ZyanI64) rv_context->t[6]);
+            rv_context->t[6] = (ZyanU64) (rv_context->mem + (ZyanI64) rv_context->t[6]);
             *((ZyanU64*) rv_context->t[6]) = rv_context->t[tmp_idx];
             break;
         case ZYDIS_MEMOP_TYPE_AGEN:
@@ -413,6 +421,50 @@ void signExtend(RVContext* rv_context, size_t src_size_idx, size_t src_idx, size
     }
 }
 
+void setFlags(RVContext* rv_context, size_t src_size_idx, size_t effective_dst_idx) {
+    //Zero flag; Doesn't need to be cast to anything.
+    rv_context->r_flags_s10.zf = (rv_context->t[effective_dst_idx] == 0);
+    //Sign flag;
+    rv_context->r_flags_s10.sf = (ZyanBool) rv_context->t[effective_dst_idx] >> (rv_context->t[src_size_idx] - 1);
+    //Overflow and Carry detection:
+    //https://www.geeksforgeeks.org/check-for-integer-overflow/
+    // if((ZyanI64) rv_context->t[0] > 0 && (ZyanI64) rv_context->t[1] > 0 && (ZyanI64) rv_context->t[effective_dst_idx] < 0)
+    //        rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 1;
+    //    if((ZyanI64) rv_context->t[0] < 0 && (ZyanI64) rv_context->t[1] < 0 && (ZyanI64) rv_context->t[effective_dst_idx] > 0)
+    //        rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 1;
+    rv_context->t[6] = rv_context->t[0] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[7] = rv_context->t[1] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[6] = rv_context->t[6] == 0;
+    rv_context->t[7] = rv_context->t[7] == 0;
+    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+    rv_context->t[7] = rv_context->t[effective_dst_idx] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[7] = rv_context->t[7] != 0;
+    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+    if (rv_context->t[6]) {
+        rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_TRUE;
+    }
+    rv_context->t[6] = rv_context->t[0] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[7] = rv_context->t[1] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[6] = rv_context->t[6] != 0;
+    rv_context->t[7] = rv_context->t[7] != 0;
+    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+    rv_context->t[7] = rv_context->t[effective_dst_idx] >> (rv_context->t[src_size_idx] - 1);
+    rv_context->t[7] = rv_context->t[7] == 0;
+    rv_context->t[6] = rv_context->t[6] & rv_context->t[7];
+    if (rv_context->t[6]) {
+        rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = ZYAN_TRUE;
+    }
+    //Parity Calculation:
+    //https://www.geeksforgeeks.org/program-to-find-parity/
+    rv_context->r_flags_s10.pf = ZYAN_FALSE;
+    rv_context->t[6] = rv_context->t[effective_dst_idx];
+    while (rv_context->t[6])
+    {
+        rv_context->r_flags_s10.pf = !rv_context->r_flags_s10.pf;
+        rv_context->t[6] = rv_context->t[6] & (rv_context->t[6] - 1);
+    }
+}
+
 void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
     //op_dst = $0
     copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
@@ -421,18 +473,16 @@ void executeXOR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     //msb_dst = $3
     rv_context->t[2] = instruction->operand_width;
     preserveMSBs(rv_context, 2, 0, 3);
-    //result = $1
-    rv_context->t[1] = rv_context->t[0] ^ rv_context->t[1];
+    //result = $4
+    rv_context->t[4] = rv_context->t[0] ^ rv_context->t[1];
     //lsb_result = $1
-    preserveLSBs(rv_context, 2, 1, 1);
-    //combine the results in $0
-    rv_context->t[0] = (rv_context->t[1]) | (rv_context->t[3]);
-    commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    preserveLSBs(rv_context, 2, 4, 4);
+    //combine the results in $5
+    rv_context->t[5] = (rv_context->t[4]) | (rv_context->t[3]);
+    commitOperandFromTempInContext(rv_context, instruction->operands[0], 5, err_str);
     //Flags
+    setFlags(rv_context, 2, 4);
     rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
-    rv_context->r_flags_s10.zf = (rv_context->t[0] == 0);
-    rv_context->r_flags_s10.sf = (rv_context->t[0] < 0);
-    //TODO: Add Parity.
 }
 
 void executeMOV(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -462,7 +512,7 @@ void executeMOVSXD(RVContext* rv_context, ZydisDecodedInstruction* instruction, 
     preserveLSBs(rv_context, 2, 1, 1);
     //sign_extend source in $1:
     rv_context->t[3] = instruction->operands[0].element_size;
-    signExtend(rv_context, rv_context->t[2], 1, rv_context->t[3], 1);
+    signExtend(rv_context, 2, 1, 3, 1);
     //Combine the results in $0
     rv_context->t[0] = (rv_context->t[0]) | (rv_context->t[1]);
     commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
@@ -500,17 +550,16 @@ void executeAND(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     //msb_dst = $3
     rv_context->t[2] = instruction->operand_width;
     preserveMSBs(rv_context, 2, 0, 3);
-    //result = $1
-    rv_context->t[1] = rv_context->t[0] & rv_context->t[1];
+    //result = $4
+    rv_context->t[4] = rv_context->t[0] & rv_context->t[1];
     //lsb_result = $1
-    preserveLSBs(rv_context, 2, 1, 1);
+    preserveLSBs(rv_context, 2, 4, 4);
     //combine the results in $0
-    rv_context->t[0] = (rv_context->t[1]) | (rv_context->t[3]);
-    commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    rv_context->t[5] = (rv_context->t[1]) | (rv_context->t[3]);
+    commitOperandFromTempInContext(rv_context, instruction->operands[0], 5, err_str);
     //Flags
+    setFlags(rv_context, 2, 4);
     rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
-    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
-    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
 }
 
 void executePUSH(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -555,16 +604,14 @@ void executeSUB(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     //MSB_dst = $3
     rv_context->t[2] = instruction->operand_width;
     preserveMSBs(rv_context, 2, 0, 3);
-    //result = $0
-    rv_context->t[0] = (ZyanU64) ((ZyanI64) rv_context->t[0] - (ZyanI64) rv_context->t[1]);
-    //LSB_result = $0
-    preserveLSBs(rv_context, 2, 0, 0);
-    rv_context->t[0] = (rv_context->t[0]) | (rv_context->t[3]);
-    commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
-    //TODO: Flags;
-    rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
-    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
-    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
+    //result = $4
+    rv_context->t[4] = (ZyanU64) ((ZyanI64) rv_context->t[0] - (ZyanI64) rv_context->t[1]);
+    //LSB_result = $4
+    preserveLSBs(rv_context, 2, 4, 4);
+    rv_context->t[5] = (rv_context->t[4]) | (rv_context->t[3]);
+    commitOperandFromTempInContext(rv_context, instruction->operands[0], 5, err_str);
+    //Flags
+    setFlags(rv_context, 2, 4);
 }
 
 void executeSAR(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -613,10 +660,9 @@ void executeADD(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     preserveLSBs(rv_context, 2, 0, 0);
     rv_context->t[0] = (rv_context->t[0]) | (rv_context->t[3]);
     commitOperandFromTempInContext(rv_context, instruction->operands[0], 0, err_str);
-    //TODO: Flags;
+    //Flags
+    setFlags(rv_context, 2, 4);
     rv_context->r_flags_s10.of = rv_context->r_flags_s10.cf = 0;
-    rv_context->r_flags_s10.zf = (rv_context->t[4] == 0);
-    rv_context->r_flags_s10.sf = (rv_context->t[4] < 0);
 }
 
 void executeRET(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -659,11 +705,9 @@ void executeCMP(RVContext* rv_context, ZydisDecodedInstruction* instruction, FIL
     rv_context->t[2] = instruction->operand_width;
     rv_context->t[3] = instruction->operands[1].element_size;
     signExtend(rv_context, 3, 1, 2, 1);
-    rv_context->t[0] = (ZyanI64) rv_context->t[0] - (ZyanI64) rv_context->t[1];
-    //TODO: Flags.
-    rv_context->r_flags_s10.zf = (ZyanBool) (!rv_context->t[0]);
-    rv_context->r_flags_s10.cf = (ZyanBool) (rv_context->t[0] < 0);
-
+    rv_context->t[4] = (ZyanI64) rv_context->t[0] - (ZyanI64) rv_context->t[1];
+    //Flags.
+    setFlags(rv_context, 2, 4);
 }
 
 void executeHLT(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
@@ -715,6 +759,15 @@ void executeCMOVNZ(RVContext* rv_context, ZydisDecodedInstruction* instruction, 
     }
 }
 
+void executeJNLE(RVContext* rv_context, ZydisDecodedInstruction* instruction, FILE* err_str) {
+    copyOperandToTempInContext(rv_context, instruction->operands[0], 0, err_str);
+    if(!rv_context->r_flags_s10.zf && (rv_context->r_flags_s10.sf == rv_context->r_flags_s10.of)) {
+        rv_context->t[1] = instruction->operand_width;
+        preserveLSBs(rv_context, 1, 0, 0);
+        rv_context->rip_s7 += (ZyanI64) rv_context->t[0];
+    }
+}
+
 void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize stack_mem) {
     Elf64_Ehdr* elf_header = elf64->hdr;
     Elf64_Shdr* s_hdr_table = elf64->s_hdr;
@@ -752,7 +805,14 @@ void rvContextInitMemoryVars(RVContext *rv_context, Elf64_t* elf64, ZyanUSize st
 
 RVContext rvContextInit(Elf64_t* elf64, FILE* out_str, FILE* err_str) {
     RVContext rv_context;
-    rv_context.x0 = 0;
+    //Set initial values of all registers zero except the ones that should not be.
+    rv_context.x0 = rv_context.rax_s1 = rv_context.rbx_s2 = rv_context.rcx_s3 = rv_context.rdx_s4 = 0;
+    rv_context.rdi_s5 = rv_context.rsi_s6 = rv_context.r8_s11 = rv_context.r9_a0 = rv_context.r10_a1 = 0;
+    rv_context.r11_a2 = rv_context.r12_a3 = rv_context.r13_a4 = rv_context.r14_a5 = rv_context.r15_a6 = 0;
+    //Set Flags to zero:
+    Flag* flag = &(rv_context.r_flags_s10);
+    flag->sf = flag->cf = flag->zf = flag->ac = flag->df = flag->id = flag->if_ = flag->iopl = flag->of = ZYAN_FALSE;
+    flag->af = flag->tf = flag->nt = flag->rf = flag->vm = flag->vif = flag->vip = flag->pf = ZYAN_FALSE;
     //Find the address of the main symbol and put it into the pc.
     for(uint32_t i = 0; i < elf64->sym_count; i++) {
         if (!strcmp(elf64->sym_names + elf64->sym_tbl[i].st_name, "main")) {
@@ -850,6 +910,9 @@ void rvContextExecute(RVContext* rv_context, ZydisDecodedInstruction* instructio
             break;
         case ZYDIS_MNEMONIC_CMOVNZ:
             executeCMOVNZ(rv_context, instruction, err_str);
+            break;
+        case ZYDIS_MNEMONIC_JNLE:
+            executeJNLE(rv_context, instruction, err_str);
             break;
     }
 

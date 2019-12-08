@@ -2,7 +2,7 @@
 #define RVCONTEXT_H
 #include <elfparse.h>
 #include <Zydis/DecoderTypes.h>
-#define MAX_STACK_SIZE 16384
+#define MAX_STACK_SIZE 65536
 
 typedef struct {
     ZyanBool cf;
