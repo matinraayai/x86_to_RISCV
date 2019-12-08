@@ -10,3 +10,6 @@ file(GLOB ZYDIS_SOURCE "zydis/src/*.c" "zydis/src/Generated/*.inc" "zydis/depend
 include_directories(Main include)
 file(GLOB PROJ_SOURCE "src/*.c")
 add_executable(main ${ZYDIS_SOURCE} ${PROJ_SOURCE})
+
+### Example x86 Application
+add_executable(fibonacci example/fibonacci.c)
