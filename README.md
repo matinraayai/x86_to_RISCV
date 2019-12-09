@@ -11,6 +11,11 @@ git checkout master
 cd dependencies/zycore
 git submodule init && git submodule update
 ```
+Note: If encountered an "unsupported distribution" error from Zydis' header, 
+simply go to Defines.h file located at zydis/dependencies/zycore/include/Zycore 
+and make the header define ZYAN_X64 regardless of the target ISA and 
+comment out the 'error "Unsupported architecture detected"'.
+
 ## Building the emulator for RISC-V
 This has been tested on Ubuntu 18.04 LTS. For installation on other distros 
 please visit each project's repository.
@@ -18,7 +23,7 @@ please visit each project's repository.
 ```bash
 sudo apt-get install autoconf automake autotools-dev curl libmpc-dev \
 libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf \
-libtool patchutils bc zlib1g-dev libexpat-dev make gcc g++
+libtool patchutils bc zlib1g-dev libexpat-dev make gcc g++ cmake
 ```
 1. Build the RISC-V Toolchain and set it up in your path:
 ```
@@ -30,28 +35,20 @@ sudo make -j $(nproc) linux
 export PATH="$PATH:/opt/riscv64/bin"
 export RISCV="/opt/riscv64"
 ```
-2. 
-
-# Running the emulator on QEMU emulated BusyBear Linux:
-0. Dependencies:
-
-1. Build QEMU for RISC-V emulation:
+2. Build the translator's binary: 
 ```bash
-git clone https://github.com/qemu/qemu
-./configure --target-list=riscv64-softmmu,riscv32-softmmu
-make -j $(nproc)
-sudo make install
+cd build_riscv/
+cmake .
+make
 ```
-2. Download BusyBear Linux:
+3. Build the guest's binary:
 ```bash
-wget https://github.com/michaeljclark/busybear-linux/releases/download/v1.0/busybear.bin.bz2
-wget https://github.com/michaeljclark/busybear-linux/releases/download/v1.0/bbl.bz2
-bzip2 -dk bbl.bz2
-bzip2 -dk busybear.bin.bz2
+cd build_x86/
+cmake .
+make
 ```
 
-
-# Usage
+# Running the Emulator on AMD64 Using the riscv64-unknown-linux-gnu-run Tool from the RISC-V Toolchain:
 ```bash
-./main "path-to-program"
+riscv64-unknown-linux-gnu-run ./build_riscv/main_riscv ./build_x86/fibonacci
 ```
