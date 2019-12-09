@@ -35,6 +35,5 @@ int return_function (int result) {
 int main(){
     int n = 9;
     int result = return_function (fib(n));
-    printf("%d\n", result);
     return result;
 }

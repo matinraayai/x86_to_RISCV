@@ -6,7 +6,7 @@
 #define ELFPARSE_H
 #include <elf.h>
 #include <stdbool.h>
-#include <zconf.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
