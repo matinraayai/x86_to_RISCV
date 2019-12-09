@@ -24,7 +24,7 @@ libtool patchutils bc zlib1g-dev libexpat-dev make gcc g++
 ```
 git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 # You can change prefix to any other directory without space in its name.
-./configure --prefix=/opt/riscv --enable-multilib
+./configure --prefix=/opt/riscv
 sudo make -j $(nproc) linux
 # export variables
 export PATH="$PATH:/opt/riscv64/bin"
